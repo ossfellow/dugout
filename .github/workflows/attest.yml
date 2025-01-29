@@ -1,0 +1,209 @@
+name: Generate SBOM and Attestations
+
+# Reusable workflow for generating SBOMs and attestations for wasmCloud artifacts
+# - Creates SBOM for any package (Rust or non-Rust)
+# - Creates attestations for binaries and OCI images
+# - Uses Cargo.toml metadata for Rust packages
+
+on:
+  workflow_call:
+    inputs:
+      # Required inputs
+      artifact-path:
+        required: true
+        type: string
+        description: "Path to the artifact (binary or OCI image) to attest"
+      artifact-name:
+        required: true
+        type: string
+        description: "Name of the artifact (e.g., wasmcloud, wash, provider-blobstore)"
+      artifact-type:
+        required: true
+        type: string
+        description: "Type of artifact: 'binary', 'oci', or 'source'"
+      subject-digest:
+        required: false
+        type: string
+        description: "Required for OCI: SHA256 digest of the image"
+      generate-sbom:
+        required: false
+        type: boolean
+        default: false
+        description: "Whether to generate SBOM for this artifact"
+      is-rust:
+        required: false
+        type: boolean
+        default: true
+        description: "Whether this is a Rust package (uses Cargo.toml for metadata)"
+      package-name:
+        required: false
+        type: string
+        description: "For Rust packages: name in Cargo.toml (e.g., wasmcloud-provider-blobstore-s3)"
+      package-version:
+        required: false
+        type: string
+        description: "The package version, if it's not discoverable by the SBOM tool"
+      package-path:
+        required: false
+        type: string
+        description: "For non-Rust packages: path to package source for SBOM generation"
+      sbom-output-path:
+        required: false
+        type: string
+        default: "sbom"
+        description: "Directory to store generated SBOM"
+
+jobs:
+  attest:
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write      # Required for signing attestations
+      packages: write      # Required for pushing to registry
+      contents: read       # Required for reading source code
+
+    steps:
+      # Checkout code if generating SBOM for Rust package
+      - name: Checkout Repository
+        if: inputs.generate-sbom == true && inputs.is-rust == true
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      # Install cargo-sbom if the package is Rust
+      - name: Install cargo-sbom
+        if: inputs.generate-sbom == true && inputs.is-rust == true
+        run: cargo install --version 0.9.1 cargo-sbom
+
+      # Discover package path for Rust packages if not provided
+      - name: Discover Rust Package Path
+        if: inputs.generate-sbom == true && inputs.is-rust == true && inputs.package-name != '' && inputs.package-path == ''
+        id: rust-package-source
+        run: |
+          # Get the package path from Cargo metadata
+          PACKAGE_PATH=$(cargo metadata --no-deps --format-version 1 | \
+            jq -r --arg name "${{ inputs.package-name }}" \
+            '.packages[] | select(.name == $arg) | .manifest_path' | \
+            xargs dirname)
+
+          if [ -z "$PACKAGE_PATH" ]; then
+            echo "Error: Could not find package ${{ inputs.package-name }}"
+            exit 1
+          fi
+
+          echo "source_path=${PACKAGE_PATH}" >> $GITHUB_OUTPUT
+
+      # Create output directory for SBOM
+      - name: Create SBOM Directory
+        if: inputs.generate-sbom == true
+        run: mkdir -p ${{ inputs.sbom-output-path }}
+
+      # Generate SBOM for Rust packages using cargo-sbom
+      - name: Generate Rust SBOM
+        if: inputs.generate-sbom == true && inputs.is-rust == true
+        run: |
+          if [ -n "${{ inputs.package-name }}" ]; then
+            # Generate SBOM for specific package
+            cargo sbom --package ${{ inputs.package-name }} \
+              --output-format spdx-json \
+              --project-directory ${{ inputs.package-path || steps.rust-package-source.outputs.source_path || '.' }} \
+              > ${{ github.workspace }}/${{ inputs.sbom-output-path }}/${{ inputs.artifact-name }}${{ inputs.package-version != '' && format('-%s', inputs.package-version) || '' }}.spdx.json
+          else
+            # Generate SBOM for entire workspace/package
+            cargo sbom \
+              --output-format spdx-json \
+              --project-directory ${{ inputs.package-path || steps.rust-package-source.outputs.source_path || '.' }} \
+              > ${{ github.workspace }}/${{ inputs.sbom-output-path }}/${{ inputs.artifact-name }}${{ inputs.package-version != '' && format('-%s', inputs.package-version) || '' }}.spdx.json
+          fi
+
+      # Configure Syft for non-Rust packages
+      - name: Setup Syft Configuration
+        if: inputs.generate-sbom == true && inputs.is-rust != true
+        run: |
+          cat > .syft.yaml << 'EOF'
+          # Output configuration
+          output:
+            - spdx-json
+
+          # Suppress output
+          quiet: false
+
+          # Search scope
+          scope: "squashed"
+
+          # Output formatting configuration
+          format:
+            spdx-json:
+              pretty: true
+
+          # File metadata configuration
+          file:
+            metadata:
+              selection: "all"
+              digests: ["sha256"]
+              content:
+                skip-files-above-size: 10485760 # 10MB
+
+          # Source configuration
+          source:
+            name: ${{ inputs.artifact-name }}
+            version: ${{ inputs.package-version }}
+            base-path: ${{ inputs.package-path }}
+
+          # Logging configuration
+          log:
+            structured: true
+            level: "error"
+            file: ""
+          EOF
+
+      # Generate SBOM for non-Rust packages using Syft
+      - name: Generate Non-Rust SBOM
+        if: inputs.generate-sbom == true && inputs.is-rust != true
+        uses: anchore/sbom-action@v0
+        with:
+          path: ${{ inputs.artifact-path }}
+          artifact-name: ${{ inputs.artifact-name }}.sbom
+          format: spdx-json
+          output-file: ${{ inputs.sbom-output-path }}/${{ inputs.artifact-name }}${{ inputs.package-version != '' && format('-%s', inputs.package-version) || '' }}.spdx.json
+
+      # Binary attestation sequence
+      - name: Attest binary build provenance
+        if: inputs.artifact-type == 'binary'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ inputs.artifact-path }}
+          subject-name: ${{ inputs.artifact-name }}
+
+      - name: Attest binary SBOM
+        if: inputs.artifact-type == 'binary' && inputs.generate-sbom == true
+        uses: actions/attest-sbom@v2
+        with:
+          subject-path: ${{ inputs.artifact-path }}
+          subject-name: ${{ inputs.artifact-name }}
+          sbom-path: ${{ inputs.sbom-output-path }}/${{ inputs.artifact-name }}${{ inputs.package-version != '' && format('-%s', inputs.package-version) || '' }}.spdx.json
+
+      # OCI image attestation sequence
+      - name: Attest OCI image build provenance
+        if: inputs.artifact-type == 'oci' && inputs.subject-digest != ''
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ inputs.artifact-path }}    # Must be fully-qualified image name
+          subject-digest: ${{ inputs.subject-digest }}
+          push-to-registry: true
+
+      - name: Attest OCI image SBOM
+        if: inputs.artifact-type == 'oci' && inputs.generate-sbom == true && inputs.subject-digest != ''
+        uses: actions/attest-sbom@v2
+        with:
+          subject-name: ${{ inputs.artifact-path }}    # Must be fully-qualified image name
+          subject-digest: ${{ inputs.subject-digest }}
+          sbom-path: ${{ inputs.sbom-output-path }}/${{ inputs.artifact-name }}${{ inputs.package-version != '' && format('-%s', inputs.package-version) || '' }}.spdx.json
+          push-to-registry: true
+
+      # Source code SBOM generation
+      - name: Generate source SBOM
+        if: inputs.artifact-type == 'source' && inputs.generate-sbom == true
+        uses: anchore/sbom-action@v0
+        with:
+          path: ${{ inputs.artifact-path }}
+          artifact-name: ${{ inputs.artifact-name }}.sbom
+          format: spdx-json
+          output-file: ${{ inputs.sbom-output-path }}/${{ inputs.artifact-name }}${{ inputs.package-version != '' && format('-%s', inputs.package-version) || '' }}.spdx.json

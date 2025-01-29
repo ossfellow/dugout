@@ -1,0 +1,288 @@
+name: wasmCloud Provenance and Attestation Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      run-mode:
+        description: 'Which jobs to run'
+        type: choice
+        required: true
+        default: 'test-only'
+        options:
+          - test-only
+          - cleanup-only
+          - cleanup-and-test
+
+env:
+  WASMCLOUD_VERSION: 1.5.1
+
+permissions:
+  contents: write     # Required for release deletion
+  packages: write     # Required for package deletion
+  id-token: write    # Required for attestations
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-22.04
+    if: github.event.inputs.run-mode == 'cleanup-only' || github.event.inputs.run-mode == 'cleanup-and-test'
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete mock image
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get package version IDs first
+          VERSIONS=$(gh api \
+            /user/packages/container/mock-attestation%2Fmock-wasmcloud/versions \
+            --jq '.[].id')
+
+          # Delete each version
+          for version_id in $VERSIONS; do
+            gh api \
+              --method DELETE \
+              /user/packages/container/mock-attestation%2Fmock-wasmcloud/versions/$version_id
+          done
+
+      - name: Delete release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Check if release exists first
+          if gh release view v${WASMCLOUD_VERSION} &>/dev/null; then
+            gh release delete v${WASMCLOUD_VERSION} --yes
+          fi
+
+  test-attestation:
+    runs-on: ubuntu-22.04
+    if: github.event.inputs.run-mode == 'test-only' || github.event.inputs.run-mode == 'cleanup-and-test'
+    needs: [cleanup]
+    steps:
+      - name: Clone wasmCloud repository
+        uses: actions/checkout@v4
+        with:
+          repository: wasmCloud/wasmCloud
+          path: wasmcloud
+
+      - name: Install skopeo
+        uses: warjiang/setup-skopeo@v0.1.3
+        with:
+          version: v1.17.0
+
+      - name: Install regctl
+        uses: iarekylew00t/regctl-installer@v3
+        with:
+          regctl-release: v0.7.2
+
+      - name: Download wasmCloud image with skopeo
+        run: |
+          mkdir -p current-wasmcloud
+          skopeo copy --all docker://ghcr.io/wasmcloud/wasmcloud:${WASMCLOUD_VERSION} dir:current-wasmcloud
+
+      - name: Inspect current image configuration files
+        run: |
+          find current-wasmcloud -type f -size -2048c -print0 | while IFS= read -r -d '' file; do
+            echo "=== Contents of $file ==="
+            yq -P -oy '.' "$file" 2>/dev/null || echo "Not a YAML/JSON file"
+            echo
+          done
+
+      - name: Download wasmCloud image with regctl
+        run: |
+          regctl image copy \
+            ghcr.io/wasmcloud/wasmcloud:${WASMCLOUD_VERSION} \
+            ocidir://future-wasmcloud:${WASMCLOUD_VERSION} \
+            --digest-tags \
+            --referrers
+
+      - name: Get repository license
+        id: license
+        run: |
+          LICENSE=$(gh api repos/wasmCloud/wasmCloud | jq -r .license.spdx_id)
+          echo "license=${LICENSE}" >> $GITHUB_OUTPUT
+
+      - name: Add OCI annotations to image
+        run: |
+          regctl image mod \
+          ocidir://future-wasmcloud:${WASMCLOUD_VERSION} \
+          --replace \
+          --to-oci \
+          --to-oci-referrers \
+          --label-to-annotation \
+          --annotation="[*]org.opencontainers.image.authors=automation@wasmcloud.com \
+          --annotation="[*]org.opencontainers.image.licenses=${{ steps.license.outputs.license }}" \
+          --annotation="[*]org.opencontainers.image.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+      - name: Add a `mock` tag to image
+        run: |
+          regctl image copy \
+            ocidir://future-wasmcloud:${WASMCLOUD_VERSION} \
+            ocidir://future-wasmcloud:mock \
+            --digest-tags \
+            --referrers
+
+      - name: Inspect future image configuration files
+        run: |
+          find future-wasmcloud -type f -size -2048c -print0 | while IFS= read -r -d '' file; do
+            echo "=== Contents of $file ==="
+            yq -P -oy '.' "$file" 2>/dev/null || echo "Not a YAML/JSON file"
+            echo
+          done
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload future image to mock-attestation repository
+        run: |
+          regctl image copy \
+            ocidir://future-wasmcloud:${WASMCLOUD_VERSION} \
+            ghcr.io/${{ github.repository_owner }}/mock-attestation/mock-wasmcloud:${WASMCLOUD_VERSION} \
+            --digest-tags \
+            --referrers
+
+      - name: Stage wasmCloud binary
+        run: |
+          mkdir -p staging
+          curl -L -o staging/mock-wasmcloud \
+            https://github.com/wasmCloud/wasmCloud/releases/download/v${WASMCLOUD_VERSION}/wasmcloud-x86_64-unknown-linux-musl
+          chmod +x staging/mock-wasmcloud
+
+      - name: Attest mock-wasmcloud binary
+        uses: ./.github/workflows/attest.yml
+        with:
+          artifact-type: binary
+          artifact-path: staging/mock-wasmcloud
+          artifact-name: mock-wasmcloud
+          generate-sbom: true
+          is-rust: true
+          package-name: wasmcloud
+          package-version: ${{ env.WASMCLOUD_VERSION }}
+          sbom-output-path: staging
+
+      - name: Verify binary attestation
+        run: |
+          echo "=== Binary Build Provenance Attestation ==="
+          gh attestation verify staging/mock-wasmcloud \
+            --repo ${{ github.repository }} \
+            --format json
+
+          echo "=== Binary SBOM Attestation ==="
+          gh attestation verify staging/mock-wasmcloud \
+            --repo ${{ github.repository }} \
+            --predicate-type https://spdx.dev/Document \
+            --format json
+
+      - name: Get image digest
+        id: digest
+        run: |
+          DIGEST=$(regctl image digest ghcr.io/${{ github.repository_owner }}/mock-attestation/mock-wasmcloud:${WASMCLOUD_VERSION})
+          echo "sha=${DIGEST}" >> $GITHUB_OUTPUT
+
+      - name: Attest OCI image
+        uses: ./.github/workflows/attest.yml
+        with:
+          artifact-type: oci
+          artifact-path: ghcr.io/${{ github.repository_owner }}/mock-attestation/mock-wasmcloud
+          artifact-name: mock-wasmcloud
+          subject-digest: ${{ steps.digest.outputs.sha }}
+          generate-sbom: true
+          is-rust: true
+          package-name: wasmcloud
+          package-version: ${{ env.WASMCLOUD_VERSION }}
+          sbom-output-path: staging
+
+      - name: Verify OCI image attestation
+        run: |
+          echo "=== OCI Image Build Provenance Attestation ==="
+          gh attestation verify \
+            oci://ghcr.io/${{ github.repository_owner }}/mock-attestation/mock-wasmcloud \
+            --repo ${{ github.repository }} \
+            --bundle-from-oci \
+            --format json
+
+          echo "=== OCI Image SBOM Attestation ==="
+          gh attestation verify \
+            oci://ghcr.io/${{ github.repository_owner }}/mock-attestation/mock-wasmcloud \
+            --repo ${{ github.repository }} \
+            --bundle-from-oci \
+            --predicate-type https://spdx.dev/Document \
+            --format json
+
+      - name: Download attested image for inspection
+        run: |
+          rm -rf future-wasmcloud
+          regctl image copy \
+            ghcr.io/${{ github.repository_owner }}/mock-attestation/mock-wasmcloud:${WASMCLOUD_VERSION} \
+            ocidir://future-wasmcloud:${WASMCLOUD_VERSION} \
+            --digest-tags \
+            --referrers
+
+      - name: Inspect attested image configuration files
+        run: |
+          find future-wasmcloud -type f -size -2048c -print0 | while IFS= read -r -d '' file; do
+            echo "=== Contents of $file ==="
+            yq -P -oy '.' "$file" 2>/dev/null || echo "Not a YAML/JSON file"
+            echo
+          done
+
+      # Language-specific SBOM generation and inspection
+      - name: Attest Go example
+        uses: ./.github/workflows/attest.yml
+        with:
+          artifact-type: source
+          artifact-path: wasmcloud/examples/golang/components/http-hello-world
+          artifact-name: go-example
+          generate-sbom: true
+          is-rust: false
+          sbom-output-path: sbom-eval
+
+      - name: Attest TypeScript example
+        uses: ./.github/workflows/attest.yml
+        with:
+          artifact-type: source
+          artifact-path: wasmcloud/examples/typescript/components/http-hello-world
+          artifact-name: ts-example
+          generate-sbom: true
+          is-rust: false
+          sbom-output-path: sbom-eval
+
+      - name: Attest Python example
+        uses: ./.github/workflows/attest.yml
+        with:
+          artifact-type: source
+          artifact-path: wasmcloud/examples/python/components/http-hello-world
+          artifact-name: py-example
+          generate-sbom: true
+          is-rust: false
+          sbom-output-path: sbom-eval
+
+      - name: Display SBOMs
+        run: |
+          echo "=== Go Example SBOM Packages ==="
+          yq -P '.packages[] | select(.name != null) | {name: .name, version: .versionInfo, type: .SPDXID}' sbom-eval/go-example.spdx.json
+
+          echo "=== TypeScript Example SBOM Packages ==="
+          yq -P '.packages[] | select(.name != null) | {name: .name, version: .versionInfo, supplier: .supplier}' sbom-eval/ts-example.spdx.json
+
+          echo "=== Python Example SBOM Packages ==="
+          yq -P '.packages[] | select(.name != null) | {name: .name, version: .versionInfo, type: .SPDXID}' sbom-eval/py-example.spdx.json
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Create release
+          gh release create v${WASMCLOUD_VERSION} \
+            --title "Mock wasmCloud v${WASMCLOUD_VERSION}" \
+            --notes "Mock release for testing attestation workflow" \
+            staging/mock-wasmcloud \
+            staging/mock-wasmcloud-${WASMCLOUD_VERSION}.spdx.json
