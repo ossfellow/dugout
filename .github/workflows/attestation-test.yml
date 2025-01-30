@@ -169,6 +169,7 @@ jobs:
           is-rust: true
           package-name: wasmcloud
           package-version: ${{ env.WASMCLOUD_VERSION }}
+          package-path: wasmcloud
           sbom-output-path: staging
 
       - name: Verify binary attestation
@@ -201,6 +202,7 @@ jobs:
           is-rust: true
           package-name: wasmcloud
           package-version: ${{ env.WASMCLOUD_VERSION }}
+          package-path: wasmcloud
           sbom-output-path: staging
 
       - name: Verify OCI image attestation
