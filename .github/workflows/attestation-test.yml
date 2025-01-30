@@ -168,6 +168,7 @@ jobs:
           echo "sha=${DIGEST}" >> $GITHUB_OUTPUT
     outputs:
       digest: ${{ steps.digest.outputs.sha }}
+      version: ${{ env.WASMCLOUD_VERSION }}
 
   attest-binary:
     needs: [test-attestation-setup]
@@ -179,7 +180,7 @@ jobs:
       generate-sbom: true
       is-rust: true
       package-name: wasmcloud
-      package-version: ${{ env.WASMCLOUD_VERSION }}
+      package-version: ${{ needs.test-attestation-setup.outputs.version }}
       package-path: wasmcloud
       sbom-output-path: staging
 
@@ -194,7 +195,7 @@ jobs:
       generate-sbom: true
       is-rust: true
       package-name: wasmcloud
-      package-version: ${{ env.WASMCLOUD_VERSION }}
+      package-version: ${{ needs.test-attestation-setup.outputs.version }}
       package-path: wasmcloud
       sbom-output-path: staging
 
