@@ -64,6 +64,10 @@ jobs:
       - name: Checkout mock-attestations repository
         uses: actions/checkout@v4
 
+      - name: Check contents of repository
+        run: |
+          ls -laR /home/runner/work/mock-attestations/mock-attestations/
+
       - name: Clone wasmCloud repository
         uses: actions/checkout@v4
         with:
