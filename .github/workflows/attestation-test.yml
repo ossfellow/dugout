@@ -56,7 +56,7 @@ jobs:
             gh release delete v${WASMCLOUD_VERSION} --yes
           fi
 
-  test-attestation:
+  test-attestation-setup:
     runs-on: ubuntu-22.04
     if: github.event.inputs.run-mode == 'test-only' || github.event.inputs.run-mode == 'cleanup-and-test'
     needs: [cleanup]
@@ -88,6 +88,7 @@ jobs:
       - name: Inspect current image configuration files
         run: |
           find current-wasmcloud -type f -size -2048c -print0 | while IFS= read -r -d '' file; do
+            echo
             echo "=== Contents of $file ==="
             yq -P -oy '.' "$file" 2>/dev/null || echo "Not a YAML/JSON file"
             echo
@@ -132,6 +133,7 @@ jobs:
       - name: Inspect future image configuration files
         run: |
           find future-wasmcloud -type f -size -2048c -print0 | while IFS= read -r -d '' file; do
+            echo
             echo "=== Contents of $file ==="
             yq -P -oy '.' "$file" 2>/dev/null || echo "Not a YAML/JSON file"
             echo
@@ -159,19 +161,81 @@ jobs:
             https://github.com/wasmCloud/wasmCloud/releases/download/v${WASMCLOUD_VERSION}/wasmcloud-x86_64-unknown-linux-musl
           chmod +x staging/mock-wasmcloud
 
-      - name: Attest mock-wasmcloud binary
-        uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
-        with:
-          artifact-type: binary
-          artifact-path: staging/mock-wasmcloud
-          artifact-name: mock-wasmcloud
-          generate-sbom: true
-          is-rust: true
-          package-name: wasmcloud
-          package-version: ${{ env.WASMCLOUD_VERSION }}
-          package-path: wasmcloud
-          sbom-output-path: staging
+      - name: Get image digest
+        id: digest
+        run: |
+          DIGEST=$(regctl image digest ghcr.io/${{ github.repository_owner }}/mock-attestation/mock-wasmcloud:${WASMCLOUD_VERSION})
+          echo "sha=${DIGEST}" >> $GITHUB_OUTPUT
+    outputs:
+      digest: ${{ steps.digest.outputs.sha }}
 
+  attest-binary:
+    needs: [test-attestation-setup]
+    uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
+    with:
+      artifact-type: binary
+      artifact-path: staging/mock-wasmcloud
+      artifact-name: mock-wasmcloud
+      generate-sbom: true
+      is-rust: true
+      package-name: wasmcloud
+      package-version: ${{ env.WASMCLOUD_VERSION }}
+      package-path: wasmcloud
+      sbom-output-path: staging
+
+  attest-oci:
+    needs: [test-attestation-setup]
+    uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
+    with:
+      artifact-type: oci
+      artifact-path: ghcr.io/${{ github.repository_owner }}/mock-attestation/mock-wasmcloud
+      artifact-name: mock-wasmcloud
+      subject-digest: ${{ needs.test-attestation-setup.outputs.digest }}
+      generate-sbom: true
+      is-rust: true
+      package-name: wasmcloud
+      package-version: ${{ env.WASMCLOUD_VERSION }}
+      package-path: wasmcloud
+      sbom-output-path: staging
+
+  # Language-specific SBOM generation and inspection
+  attest-go:
+    needs: [test-attestation-setup]
+    uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
+    with:
+      artifact-type: source
+      artifact-path: wasmcloud/examples/golang/components/http-hello-world
+      artifact-name: go-example
+      generate-sbom: true
+      is-rust: false
+      sbom-output-path: sbom-eval
+
+  attest-ts:
+    needs: [test-attestation-setup]
+    uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
+    with:
+      artifact-type: source
+      artifact-path: wasmcloud/examples/typescript/components/http-hello-world
+      artifact-name: ts-example
+      generate-sbom: true
+      is-rust: false
+      sbom-output-path: sbom-eval
+
+  attest-py:
+    needs: [test-attestation-setup]
+    uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
+    with:
+      artifact-type: source
+      artifact-path: wasmcloud/examples/python/components/http-hello-world
+      artifact-name: py-example
+      generate-sbom: true
+      is-rust: false
+      sbom-output-path: sbom-eval
+
+  verify:
+    needs: [attest-binary, attest-oci]
+    runs-on: ubuntu-22.04
+    steps:
       - name: Verify binary attestation
         env:
           GH_TOKEN: ${{ github.token }}
@@ -186,26 +250,6 @@ jobs:
             --repo ${{ github.repository }} \
             --predicate-type https://spdx.dev/Document \
             --format json
-
-      - name: Get image digest
-        id: digest
-        run: |
-          DIGEST=$(regctl image digest ghcr.io/${{ github.repository_owner }}/mock-attestation/mock-wasmcloud:${WASMCLOUD_VERSION})
-          echo "sha=${DIGEST}" >> $GITHUB_OUTPUT
-
-      - name: Attest OCI image
-        uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
-        with:
-          artifact-type: oci
-          artifact-path: ghcr.io/${{ github.repository_owner }}/mock-attestation/mock-wasmcloud
-          artifact-name: mock-wasmcloud
-          subject-digest: ${{ steps.digest.outputs.sha }}
-          generate-sbom: true
-          is-rust: true
-          package-name: wasmcloud
-          package-version: ${{ env.WASMCLOUD_VERSION }}
-          package-path: wasmcloud
-          sbom-output-path: staging
 
       - name: Verify OCI image attestation
         env:
@@ -238,52 +282,25 @@ jobs:
       - name: Inspect attested image configuration files
         run: |
           find future-wasmcloud -type f -size -2048c -print0 | while IFS= read -r -d '' file; do
+            echo
             echo "=== Contents of $file ==="
             yq -P -oy '.' "$file" 2>/dev/null || echo "Not a YAML/JSON file"
             echo
           done
 
-      # Language-specific SBOM generation and inspection
-      - name: Attest Go example
-        uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
-        with:
-          artifact-type: source
-          artifact-path: wasmcloud/examples/golang/components/http-hello-world
-          artifact-name: go-example
-          generate-sbom: true
-          is-rust: false
-          sbom-output-path: sbom-eval
-
-      - name: Attest TypeScript example
-        uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
-        with:
-          artifact-type: source
-          artifact-path: wasmcloud/examples/typescript/components/http-hello-world
-          artifact-name: ts-example
-          generate-sbom: true
-          is-rust: false
-          sbom-output-path: sbom-eval
-
-      - name: Attest Python example
-        uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
-        with:
-          artifact-type: source
-          artifact-path: wasmcloud/examples/python/components/http-hello-world
-          artifact-name: py-example
-          generate-sbom: true
-          is-rust: false
-          sbom-output-path: sbom-eval
-
       - name: Display SBOMs
         run: |
           echo "=== Go Example SBOM Packages ==="
           yq -P '.packages[] | select(.name != null) | {name: .name, version: .versionInfo, type: .SPDXID}' sbom-eval/go-example.spdx.json
+          echo
 
           echo "=== TypeScript Example SBOM Packages ==="
           yq -P '.packages[] | select(.name != null) | {name: .name, version: .versionInfo, supplier: .supplier}' sbom-eval/ts-example.spdx.json
+          echo
 
           echo "=== Python Example SBOM Packages ==="
           yq -P '.packages[] | select(.name != null) | {name: .name, version: .versionInfo, type: .SPDXID}' sbom-eval/py-example.spdx.json
+          echo
 
       - name: Create GitHub Release
         env:
