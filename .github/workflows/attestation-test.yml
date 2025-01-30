@@ -64,10 +64,6 @@ jobs:
       - name: Checkout mock-attestations repository
         uses: actions/checkout@v4
 
-      - name: Check contents of repository
-        run: |
-          ls -laR /home/runner/work/mock-attestations/mock-attestations/
-
       - name: Clone wasmCloud repository
         uses: actions/checkout@v4
         with:
@@ -164,7 +160,7 @@ jobs:
           chmod +x staging/mock-wasmcloud
 
       - name: Attest mock-wasmcloud binary
-        uses: ./.github/workflows/attest.yml
+        uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
         with:
           artifact-type: binary
           artifact-path: staging/mock-wasmcloud
@@ -198,7 +194,7 @@ jobs:
           echo "sha=${DIGEST}" >> $GITHUB_OUTPUT
 
       - name: Attest OCI image
-        uses: ./.github/workflows/attest.yml
+        uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
         with:
           artifact-type: oci
           artifact-path: ghcr.io/${{ github.repository_owner }}/mock-attestation/mock-wasmcloud
@@ -249,7 +245,7 @@ jobs:
 
       # Language-specific SBOM generation and inspection
       - name: Attest Go example
-        uses: ./.github/workflows/attest.yml
+        uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
         with:
           artifact-type: source
           artifact-path: wasmcloud/examples/golang/components/http-hello-world
@@ -259,7 +255,7 @@ jobs:
           sbom-output-path: sbom-eval
 
       - name: Attest TypeScript example
-        uses: ./.github/workflows/attest.yml
+        uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
         with:
           artifact-type: source
           artifact-path: wasmcloud/examples/typescript/components/http-hello-world
@@ -269,7 +265,7 @@ jobs:
           sbom-output-path: sbom-eval
 
       - name: Attest Python example
-        uses: ./.github/workflows/attest.yml
+        uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
         with:
           artifact-type: source
           artifact-path: wasmcloud/examples/python/components/http-hello-world
