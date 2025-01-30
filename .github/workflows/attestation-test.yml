@@ -156,6 +156,9 @@ jobs:
             https://github.com/wasmCloud/wasmCloud/releases/download/v${WASMCLOUD_VERSION}/wasmcloud-x86_64-unknown-linux-musl
           chmod +x staging/mock-wasmcloud
 
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Attest mock-wasmcloud binary
         uses: ./.github/workflows/attest.yml
         with:
