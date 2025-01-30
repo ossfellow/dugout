@@ -61,6 +61,9 @@ jobs:
     if: github.event.inputs.run-mode == 'test-only' || github.event.inputs.run-mode == 'cleanup-and-test'
     needs: [cleanup]
     steps:
+      - name: Checkout mock-attestations repository
+        uses: actions/checkout@v4
+
       - name: Clone wasmCloud repository
         uses: actions/checkout@v4
         with:
@@ -155,9 +158,6 @@ jobs:
           curl -L -o staging/mock-wasmcloud \
             https://github.com/wasmCloud/wasmCloud/releases/download/v${WASMCLOUD_VERSION}/wasmcloud-x86_64-unknown-linux-musl
           chmod +x staging/mock-wasmcloud
-
-      - name: Checkout Repository
-        uses: actions/checkout@v4
 
       - name: Attest mock-wasmcloud binary
         uses: ./.github/workflows/attest.yml

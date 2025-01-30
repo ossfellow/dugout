@@ -79,7 +79,7 @@ jobs:
 
       # Checkout code if generating SBOM for Rust package
       - name: Checkout Repository
-        if: inputs.generate-sbom == true && inputs.is-rust == true
+        # if: inputs.generate-sbom == true && inputs.is-rust == true
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       # Install cargo-sbom if the package is Rust
