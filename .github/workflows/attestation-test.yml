@@ -24,7 +24,6 @@ permissions:
 jobs:
   cleanup:
     runs-on: ubuntu-22.04
-    if: github.event.inputs.run-mode == 'cleanup-only' || github.event.inputs.run-mode == 'cleanup-and-test'
     steps:
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -34,6 +33,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Delete mock images
+        if: github.event.inputs.run-mode == 'cleanup-only' || github.event.inputs.run-mode == 'cleanup-and-test'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
@@ -46,6 +46,7 @@ jobs:
             /user/packages/container/mock-attestation%2Fmock-wasmcloud
 
       - name: Delete release
+        if: github.event.inputs.run-mode == 'cleanup-only' || github.event.inputs.run-mode == 'cleanup-and-test'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
