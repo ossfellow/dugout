@@ -118,13 +118,13 @@ jobs:
             # Generate SBOM for specific package
             cargo sbom \
               --cargo-package ${{ inputs.package-name }} \
-              --output-format spdx-json \
+              --output-format spdx_json_2_3 \
               --project-directory ${{ inputs.package-path || steps.rust-package-source.outputs.source_path || '.' }} \
               > ${{ github.workspace }}/${{ inputs.sbom-output-path }}/${{ inputs.artifact-name }}${{ inputs.package-version != '' && format('-%s', inputs.package-version) || '' }}.spdx.json
           else
             # Generate SBOM for entire workspace/package
             cargo sbom \
-              --output-format spdx-json \
+              --output-format spdx_json_2_3 \
               --project-directory ${{ inputs.package-path || steps.rust-package-source.outputs.source_path || '.' }} \
               > ${{ github.workspace }}/${{ inputs.sbom-output-path }}/${{ inputs.artifact-name }}${{ inputs.package-version != '' && format('-%s', inputs.package-version) || '' }}.spdx.json
           fi
@@ -175,10 +175,10 @@ jobs:
         if: inputs.generate-sbom == true && inputs.is-rust != true
         uses: anchore/sbom-action@v0
         with:
-          path: ${{ inputs.artifact-path }}
+          path: ${{ github.workspace }}/${{ inputs.artifact-path }}
           artifact-name: ${{ inputs.artifact-name }}.sbom
           format: spdx-json
-          output-file: ${{ inputs.sbom-output-path }}/${{ inputs.artifact-name }}${{ inputs.package-version != '' && format('-%s', inputs.package-version) || '' }}.spdx.json
+          output-file: ${{ github.workspace }}/${{ inputs.sbom-output-path }}/${{ inputs.artifact-name }}${{ inputs.package-version != '' && format('-%s', inputs.package-version) || '' }}.spdx.json
 
       # Binary attestation sequence
       - name: Attest binary build provenance

@@ -205,7 +205,7 @@ jobs:
     uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
     with:
       artifact-type: source
-      artifact-path: wasmcloud/wasmcloud/examples/golang/components/http-hello-world
+      artifact-path: wasmcloud/examples/golang/components/http-hello-world
       artifact-name: go-example
       generate-sbom: true
       is-rust: false
@@ -216,7 +216,7 @@ jobs:
     uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
     with:
       artifact-type: source
-      artifact-path: wasmcloud/wasmcloud/examples/typescript/components/http-hello-world
+      artifact-path: wasmcloud/examples/typescript/components/http-hello-world
       artifact-name: ts-example
       generate-sbom: true
       is-rust: false
@@ -227,7 +227,7 @@ jobs:
     uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
     with:
       artifact-type: source
-      artifact-path: wasmcloud/wasmcloud/examples/python/components/http-hello-world
+      artifact-path: wasmcloud/examples/python/components/http-hello-world
       artifact-name: py-example
       generate-sbom: true
       is-rust: false
