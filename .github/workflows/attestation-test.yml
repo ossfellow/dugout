@@ -103,6 +103,8 @@ jobs:
         run: |
           LICENSE=$(gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" repos/wasmCloud/wasmCloud/license | jq -r .license.spdx_id)
           echo "license=${LICENSE}" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Add OCI annotations to image
         run: |
