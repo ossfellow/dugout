@@ -116,7 +116,8 @@ jobs:
         run: |
           if [ -n "${{ inputs.package-name }}" ]; then
             # Generate SBOM for specific package
-            cargo sbom --package ${{ inputs.package-name }} \
+            cargo sbom \
+              --cargo-package ${{ inputs.package-name }} \
               --output-format spdx-json \
               --project-directory ${{ inputs.package-path || steps.rust-package-source.outputs.source_path || '.' }} \
               > ${{ github.workspace }}/${{ inputs.sbom-output-path }}/${{ inputs.artifact-name }}${{ inputs.package-version != '' && format('-%s', inputs.package-version) || '' }}.spdx.json
