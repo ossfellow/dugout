@@ -52,8 +52,6 @@ on:
         type: string
         default: "sbom"
         description: "Directory to store generated SBOM"
-    env:
-      WASMCLOUD_VERSION: ${{ env.WASMCLOUD_VERSION }}  # This won't work either
 
 jobs:
   attest:
