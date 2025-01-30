@@ -114,7 +114,7 @@ jobs:
           --to-oci \
           --to-oci-referrers \
           --label-to-annotation \
-          --annotation="[*]org.opencontainers.image.authors=automation@wasmcloud.com \
+          --annotation="[*]org.opencontainers.image.authors=automation@wasmcloud.com" \
           --annotation="[*]org.opencontainers.image.licenses=${{ steps.license.outputs.license }}" \
           --annotation="[*]org.opencontainers.image.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
