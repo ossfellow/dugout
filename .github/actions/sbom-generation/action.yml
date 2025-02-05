@@ -1,0 +1,108 @@
+name: 'SBOM Generation'
+description: 'Generate SBOMs using cargo-sbom for Rust, k8s-sigs/bom for Go, and syft for other artifacts'
+inputs:
+  artifact-path:
+    description: 'Path to artifact to generate SBOM for'
+    required: true
+  artifact-name:
+    description: 'Name of the artifact'
+    required: true
+  language:
+    description: 'Language of the project (rust, go, other)'
+    required: true
+  package-name:
+    description: 'For Rust: package name in Cargo.toml'
+    required: false
+  package-version:
+    description: 'Package version if not discoverable'
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    # Setup syft config from attest.yml
+    - name: Setup Syft Configuration
+      if: inputs.language != 'rust' && inputs.language != 'go'
+      shell: bash
+      run: |
+        cat > .syft.yaml << 'EOF'
+        output:
+          - spdx-json
+        quiet: false
+        scope: "squashed"
+        format:
+          spdx-json:
+            pretty: true
+        file:
+          metadata:
+            selection: "all"
+            digests: ["sha256"]
+            content:
+              skip-files-above-size: 10485760
+        source:
+          name: ${{ inputs.artifact-name }}
+          version: ${{ inputs.package-version }}
+          base-path: ${{ inputs.artifact-path }}
+        log:
+          structured: true
+          level: "error"
+          file: ""
+        EOF
+
+    # For Rust projects
+    - name: Install cargo-sbom
+      if: inputs.language == 'rust'
+      shell: bash
+      run: cargo install --version 0.9.1 cargo-sbom
+
+    - name: Generate Rust SBOM
+      if: inputs.language == 'rust'
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.package-name }}" ]; then
+          cargo sbom \
+            --cargo-package ${{ inputs.package-name }} \
+            --output-format spdx_json_2_3 \
+            --project-directory ${{ github.workspace }}/${{ inputs.artifact-path }} \
+            > "${{ inputs.artifact-name }}.spdx.json"
+        else
+          cargo sbom \
+            --output-format spdx_json_2_3 \
+            --project-directory ${{ github.workspace }}/${{ inputs.artifact-path }} \
+            > "${{ inputs.artifact-name }}.spdx.json"
+        fi
+
+    # For Go projects
+    - name: Install k8s-sigs/bom
+      if: inputs.language == 'go'
+      shell: bash
+      run: go install sigs.k8s.io/bom/cmd/bom@latest
+
+    - name: Generate Go SBOM
+      if: inputs.language == 'go'
+      shell: bash
+      run: |
+        bom generate \
+          --namespace "https://wasmcloud.com" \
+          --name "${{ inputs.artifact-name }}" \
+          --path "${{ github.workspace }}/${{ inputs.artifact-path }}" \
+          --format json > "${{ inputs.artifact-name }}.spdx.json"
+
+    # For other artifacts using Anchore's action
+    - name: Generate SBOM using Syft
+      if: inputs.language != 'rust' && inputs.language != 'go'
+      uses: anchore/sbom-action@v0
+      with:
+        path: ${{ inputs.artifact-path }}
+        artifact-name: ${{ inputs.artifact-name }}.sbom
+        format: spdx-json
+        config: .syft.yaml
+        output-file: ${{ inputs.artifact-name }}.spdx.json
+
+    # Upload all SBOMs to common artifact storage
+    - name: Upload SBOMs
+      if: hashFiles(format('{0}.spdx.json', inputs.artifact-name)) != ''
+      uses: actions/upload-artifact@v2
+      with:
+        name: attestations-and-sboms
+        path: ${{ inputs.artifact-name }}.spdx.json

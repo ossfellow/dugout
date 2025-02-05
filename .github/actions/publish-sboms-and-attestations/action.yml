@@ -1,0 +1,135 @@
+name: "Publish SBOMs and Attestations"
+description: "Create OCI artifact containing SBOMs and attestations with proper annotations"
+inputs:
+  release-version:
+    description: "Version tag for the artifact"
+    required: true
+  registry:
+    description: "Target registry for the artifact"
+    required: true
+    default: "ghcr.io"
+  registry-credentials:
+    description: "JSON array of registry credentials [{url, username, password}]"
+    required: false
+  show-metadata:
+    description: "Whether to print artifacts metadata after creation"
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install regctl
+      shell: bash
+      run: |
+        curl -L https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 -o /usr/local/bin/regctl
+        chmod +x /usr/local/bin/regctl
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v2
+      with:
+        name: attestations-and-sboms
+        path: artifacts
+
+    - name: Create and populate OCI artifact
+      shell: bash
+      run: |
+        # Create empty OCI directory
+        regctl image create ocidir://provenance:${{ inputs.release-version }}
+
+        # Process each SBOM
+        find artifacts -name "*.spdx.json" -type f | while read sbom_file; do
+          base_name=$(basename "$sbom_file" .spdx.json)
+          metadata_file="artifacts/${base_name}-attestation-metadata.yaml"
+
+          # Extract metadata if available
+          if [ -f "$metadata_file" ]; then
+            subject_name=$(yq -r '.subject_name' "$metadata_file")
+            subject_digest=$(yq -r '.subject_digest' "$metadata_file")
+          else
+            subject_name="${base_name}"
+            subject_digest=""
+          fi
+
+          # Add SBOM as artifact with annotations
+          regctl artifact put \
+            --strip-dirs \
+            --index \
+            --artifact-type="application/spdx+json" \
+            --config-type="application/vnd.oci.empty.v1+json" \
+            --file-title \
+            --file-media-type="application/spdx+json" \
+            --file "$sbom_file" \
+            --subject: ocidir://provenance:${{ inputs.release-version }} \
+            --annotation "org.opencontainers.artifact.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+            --annotation "org.opencontainers.artifact.description=SPDX SBOM for ${subject_name}" \
+            --annotation "org.opencontainers.artifact.type=org.spdx.sbom" \
+            ${subject_digest:+"--annotation"} ${subject_digest:+"org.opencontainers.artifact.ref=${subject_digest}"}
+        done
+
+        # Process each attestation
+        find artifacts -name "*-attestation.json" -type f | while read attestation_file; do
+          base_name=$(basename "$attestation_file" -attestation.json)
+          metadata_file="artifacts/${base_name}-attestation-metadata.yaml"
+
+          # Extract metadata
+          if [ -f "$metadata_file" ]; then
+            artifact_type=$(yq -r '.artifact_type' "$metadata_file")
+            subject_name=$(yq -r '.subject_name' "$metadata_file")
+            subject_digest=$(yq -r '.subject_digest' "$metadata_file")
+            attestation_id=$(yq -r '.attestation_id' "$metadata_file")
+          else
+            continue
+          fi
+
+          # Add attestation as artifact with annotations
+          regctl artifact put \
+            --strip-dirs \
+            --index \
+            --artifact-type="application/json" \
+            --config-type="application/vnd.oci.empty.v1+json" \
+            --file-title \
+            --file-media-type="application/json" \
+            --file "$attestation_file" \
+            --subject: ocidir://provenance:${{ inputs.release-version }} \
+            --annotation "org.opencontainers.artifact.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+            --annotation "org.opencontainers.artifact.description=${artifact_type} attestation for ${subject_name}" \
+            --annotation "org.opencontainers.artifact.type=org.sigstore.attestation" \
+            --annotation "org.sigstore.attestation.id=${attestation_id}" \
+            ${subject_digest:+"--annotation"} ${subject_digest:+"org.opencontainers.artifact.ref=${subject_digest}"}
+        done
+
+    # Show metadata if requested
+    - name: Show image metadata
+      if: inputs.show-metadata == 'true'
+      shell: bash
+      run: |
+        IMAGE_PATH="ocidir://provenance:${{ inputs.release-version }}"
+
+        echo "=== OCI Artifact Index ==="
+        regctl artifact list ${IMAGE_PATH} -v error | yq -P
+        echo
+
+        echo "=== Processing Individual Artifacts ==="
+        for digest in $(regctl artifact list ${IMAGE_PATH} -v error | yq -r '.Referrers | with_entries(select(.key | test("Digest"))) | to_entries | .[].value'); do
+          echo "=== Artifact for $digest ==="
+          regctl blob get ${IMAGE_PATH} ${digest} -v error | yq -P
+          echo
+        done
+
+    - name: Push artifact to registry
+      if: inputs.registry-credentials
+      shell: bash
+      run: |
+        # Login to registry
+        echo "${{ inputs.registry-credentials }}" | jq -r '.[] | "\(.url) \(.username) \(.password)"' | while read url username password; do
+          echo "Logging in to $url"
+          echo "$password" | regctl registry login -u "$username" --pass-stdin "$url"
+        done
+
+        # Push the artifact
+        regctl image copy \
+          ocidir://provenance:${{ inputs.release-version }} \
+          ${{ inputs.registry }}/${{ github.repository }}/provenance:${{ inputs.release-version }} \
+          --digest-tags \
+          --referrers

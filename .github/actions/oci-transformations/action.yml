@@ -1,0 +1,209 @@
+name: "OCI Image Transformations"
+description: "Transform OCI images with metadata enrichment and format conversions"
+inputs:
+  source-image:
+    description: "Source image reference (registry URL or oci directory)"
+    required: true
+  source-tag:
+    description: "Source image tag"
+    required: true
+  image-title:
+    description: "Title of the image (e.g., wasmcloud, wash)"
+    required: true
+  image-description:
+    description: "Description of the image"
+    required: false
+  image-version:
+    description: "Version of the image"
+    required: false
+  target-registries:
+    description: "List of target registries to push to"
+    required: false
+  image-variants:
+    description: "JSON array of image variant configurations [{name, tags[]}]"
+    required: false
+  default-tags:
+    description: "List of tags to apply to base image"
+    required: false
+  show-metadata:
+    description: "Whether to print image metadata during transformation"
+    required: false
+    default: "false"
+  registry-credentials:
+    description: "JSON array of registry credentials [{url, username, password}]"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    # Install required tools
+    - name: Install tools
+      shell: bash
+      run: |
+        # Install regctl for OCI manipulation
+        curl -L https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 -o /usr/local/bin/regctl
+        chmod +x /usr/local/bin/regctl
+
+    # Process input image based on source type
+    - name: Process OCI input
+      shell: bash
+      run: |
+        mkdir -p workspace
+        if [[ "${{ inputs.source-image }}" == oci-archive:* ]]; then
+          # Import archive using regctl
+          regctl image import \
+            ocidir://workspace:${{ inputs.source-tag }} \
+            "${inputs.source-image#oci-archive:}"
+        elif [[ "${{ inputs.source-image }}" == ocidir://* ]]; then
+          # Just copy the directory contents
+          cp -r "${inputs.source-image#ocidir://}"/* workspace/
+        fi
+
+    # Download from registry if not an OCI directory or archive
+    - name: Download from registry
+      if: ${{ !startsWith(inputs.source-image, 'ocidir://') && !startsWith(inputs.source-image, 'oci-archive://') }}
+      shell: bash
+      run: |
+        # Login to registry if credentials provided
+        if [ ! -z "${{ inputs.registry-credentials }}" ]; then
+          echo "${{ inputs.registry-credentials }}" | jq -r '.[] | "\(.url) \(.username) \(.password)"' | while read url username password; do
+            echo "Logging in to $url"
+            echo "$password" | regctl registry login -u "$username" --pass-stdin "$url"
+          done
+        fi
+
+        # Download from registry to workspace
+        regctl image copy \
+          ${{ inputs.source-image }}:${{ inputs.source-tag }} \
+          ocidir://workspace:${{ inputs.source-tag }} \
+          --digest-tags \
+          --referrers
+
+    # Show metadata if requested
+    - name: Show image metadata
+      if: inputs.show-metadata == 'true'
+      shell: bash
+      run: |
+        IMAGE_PATH="${{ startsWith(inputs.source-image, 'ocidir://') && inputs.source-image || 'ocidir://workspace' }}"
+
+        echo "=== OCI Image Index (Multi-platform Manifest) ==="
+        regctl image manifest ${IMAGE_PATH}:${{ inputs.source-tag }} -v error | yq -P
+        echo
+
+        echo "=== Processing Individual Manifests ==="
+        for digest in $(regctl image manifest ${IMAGE_PATH}:${{ inputs.source-tag }} -v error | yq -r '.Manifests | with_entries(select(.key | test("Digest"))) | to_entries | .[].value'); do
+          echo "=== Manifest for $digest ==="
+          regctl blob get ${IMAGE_PATH}:${{ inputs.source-tag }} ${digest} -v error | yq -P
+          echo
+
+          config_digest=$(regctl blob get ${IMAGE_PATH}:${{ inputs.source-tag }} ${digest} -v error | yq -r '.config.digest')
+          echo "=== Config for $config_digest ==="
+          regctl blob get ${IMAGE_PATH}:${{ inputs.source-tag }} ${config_digest} -v error | yq -P
+          echo
+        done
+
+    # Enrich metadata
+    - name: Enrich image metadata
+      shell: bash
+      run: |
+        IMAGE_PATH="${{ startsWith(inputs.source-image, 'ocidir://') && inputs.source-image || 'ocidir://workspace' }}"
+
+        # Process each platform-specific manifest
+        for digest in $(regctl image manifest ${IMAGE_PATH}:${{ inputs.source-tag }} -v error | yq -r '.Manifests | with_entries(select(.key | test("Digest"))) | to_entries | .[].value'); do
+          echo "Processing manifest $digest"
+
+          # Get current annotations from platform manifest
+          CURRENT_ANNOTATIONS=$(regctl blob get ${IMAGE_PATH}:${{ inputs.source-tag }} ${digest} -v error | yq -r '.annotations // {}')
+
+          # Build annotation arguments
+          ANNOTATION_ARGS=""
+
+          # Required annotations
+          if ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.created"]' >/dev/null; then
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          fi
+
+          if ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.vendor"]' >/dev/null; then
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.vendor=wasmCloud"
+          fi
+
+          if ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.source"]' >/dev/null; then
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.source=https://github.com/wasmCloud/wasmCloud"
+          fi
+
+          if ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.title"]' >/dev/null; then
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.title=${{ inputs.image-title }}"
+          fi
+
+          # Optional annotations
+          if [ ! -z "${{ inputs.image-description }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.description"]' >/dev/null; then
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.description=${{ inputs.image-description }}"
+          fi
+
+          if [ ! -z "${{ inputs.image-version }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.version"]' >/dev/null; then
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.version=${{ inputs.image-version }}"
+          fi
+
+          # Always run regctl for OCI conversion, add annotations if any
+          regctl image mod \
+            ${IMAGE_PATH}@${digest} \
+            --replace \
+            --to-oci \
+            --to-oci-referrers \
+            --label-to-annotation \
+            ${ANNOTATION_ARGS}
+        done
+
+    # Push to target registries
+    - name: Push to registries
+      if: inputs.target-registries
+      shell: bash
+      run: |
+        IMAGE_PATH="${{ startsWith(inputs.source-image, 'ocidir://') && inputs.source-image || 'ocidir://workspace' }}"
+
+        # Login to registries if credentials provided
+        if [ ! -z "${{ inputs.registry-credentials }}" ]; then
+          echo "${{ inputs.registry-credentials }}" | jq -r '.[] | "\(.url) \(.username) \(.password)"' | while read url username password; do
+            echo "Logging in to $url"
+            echo "$password" | regctl registry login -u "$username" --pass-stdin "$url"
+          done
+        fi
+
+        # Push each variant to each registry with each tag
+        echo "${{ inputs.target-registries }}" | while read registry; do
+          if [ ! -z "$registry" ]; then
+            # Base image
+            regctl image copy \
+              ${IMAGE_PATH}:${{ inputs.source-tag }} \
+              ${registry}/${{ inputs.source-image }}:${{ inputs.source-tag }} \
+              --digest-tags \
+              --referrers
+
+            # Variants if specified
+            if [ ! -z "${{ inputs.image-variants }}" ]; then
+              echo "${{ inputs.image-variants }}" | jq -c '.[]' | while read -r variant; do
+                name=$(echo $variant | jq -r '.name')
+                echo $variant | jq -r '.tags[]' | while read -r tag; do
+                  regctl image copy \
+                    ${IMAGE_PATH}:${{ inputs.source-tag }} \
+                    ${registry}/${{ inputs.source-image }}:${tag} \
+                    --digest-tags \
+                    --referrers
+                done
+              done
+            fi
+
+            # Additional tags if specified
+            if [ ! -z "${{ inputs.default-tags }}" ]; then
+              echo "${{ inputs.default-tags }}" | while read tag; do
+                if [ ! -z "$tag" ]; then
+                  regctl image copy \
+                    ${IMAGE_PATH}:${{ inputs.source-tag }} \
+                    ${registry}/${{ inputs.source-image }}:${tag} \
+                    --digest-tags \
+                    --referrers
+                fi
+              done
+            fi
+          fi
+        done

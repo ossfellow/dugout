@@ -45,7 +45,7 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             /user/packages/container/mock-attestation%2Fmock-wasmcloud
 
-      - name: Delete release
+      - name: Delete releases
         if: github.event.inputs.run-mode == 'cleanup-only' || github.event.inputs.run-mode == 'cleanup-and-test'
         continue-on-error: true
         env:
@@ -80,21 +80,35 @@ jobs:
         with:
           regctl-release: v0.7.2
 
-      - name: Download wasmCloud image with skopeo
+      - name: 1- Download wasmCloud image with skopeo (custom skopeo format - dir:folder)
         run: |
           mkdir -p current-wasmcloud
           skopeo copy --all docker://ghcr.io/wasmcloud/wasmcloud:${WASMCLOUD_VERSION} dir:current-wasmcloud
 
-      - name: Inspect current image configuration files
+      - name: 2- Inspect current image configuration files (Image Manifest V 2, Schema 2 - aka. Docker Distribution format)
         run: |
-          find current-wasmcloud -type f -size -2048c -print0 | while IFS= read -r -d '' file; do
+          echo "=== Image Manifest List ==="
+          yq -P -oy current-wasmcloud/manifest.json
+          echo
+
+          echo "=== Processing Individual Manifests ==="
+          for digest in $(yq -r '.manifests.[].digest' current-wasmcloud/manifest.json); do
+            sha=${digest#sha256:}
             echo
-            echo "=== Contents of $file ==="
-            yq -P -oy '.' "$file" 2>/dev/null || echo "Not a YAML/JSON file"
+            echo "=== Manifest for $digest ==="
+            yq -P -oy current-wasmcloud/${sha}.manifest.json
+            echo
+
+            # Get config digest and show its contents
+            config_digest=$(yq -r '.config.digest' current-wasmcloud/${sha}.manifest.json)
+            config_sha=${config_digest#sha256:}
+            echo
+            echo "=== Config for $config_digest ==="
+            yq -P -oy current-wasmcloud/${config_sha}.config.json
             echo
           done
 
-      - name: Download wasmCloud image with regctl
+      - name: 3- Download wasmCloud image with regctl (trasform to OCI layout, using OCI Image Format Specification v1.1)
         run: |
           regctl image copy \
             ghcr.io/wasmcloud/wasmcloud:${WASMCLOUD_VERSION} \
@@ -102,7 +116,7 @@ jobs:
             --digest-tags \
             --referrers
 
-      - name: Get repository license
+      - name: 4- Get repository license
         id: license
         env:
           GH_TOKEN: ${{ github.token }}
@@ -110,7 +124,7 @@ jobs:
           LICENSE=$(gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" repos/wasmCloud/wasmCloud/license | jq -r .license.spdx_id)
           echo "license=${LICENSE}" >> $GITHUB_OUTPUT
 
-      - name: Add OCI annotations to image
+      - name: 5- Add additional OCI annotations to image
         run: |
           regctl image mod \
           ocidir://future-wasmcloud:${WASMCLOUD_VERSION} \
@@ -122,7 +136,7 @@ jobs:
           --annotation="[*]org.opencontainers.image.licenses=${{ steps.license.outputs.license }}" \
           --annotation="[*]org.opencontainers.image.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
-      - name: Add a `mock` tag to image
+      - name: 6- Add a `mock` tag to image
         run: |
           regctl image copy \
             ocidir://future-wasmcloud:${WASMCLOUD_VERSION} \
@@ -130,23 +144,37 @@ jobs:
             --digest-tags \
             --referrers
 
-      - name: Inspect future image configuration files
+      - name: 7- Inspect the resultant OCI image configuration files
         run: |
-          find future-wasmcloud -type f -size -2048c -print0 | while IFS= read -r -d '' file; do
+          echo "=== OCI Image Index (Multi-platform Manifest) ==="
+          regctl image manifest ocidir://future-wasmcloud:${WASMCLOUD_VERSION} -v error | yq -P
+          echo
+
+          echo "=== Processing Individual Manifests ==="
+          for digest in $(regctl image manifest ocidir://future-wasmcloud:${WASMCLOUD_VERSION} -v error | yq -r '.Manifests | with_entries(select(.key | test("Digest"))) | to_entries | .[].value'); do
+            echo "=== Manifest for $digest ==="
+            regctl blob get ocidir://future-wasmcloud:${WASMCLOUD_VERSION} ${digest} -v error | yq -P
             echo
-            echo "=== Contents of $file ==="
-            yq -P -oy '.' "$file" 2>/dev/null || echo "Not a YAML/JSON file"
+
+            # Get and show config blob
+            config_digest=$(regctl blob get ocidir://future-wasmcloud:${WASMCLOUD_VERSION} ${digest} -v error | yq -r '.config.digest')
+            echo "=== Config for $config_digest ==="
+            regctl blob get ocidir://future-wasmcloud:${WASMCLOUD_VERSION} ${config_digest} -v error | yq -P
             echo
           done
 
-      - name: Login to GitHub Container Registry
+      - name: 8- Create OCI layout for SBOMs and attestations
+        run: |
+          regctl image create ocidir://attestations-n-sboms:${WASMCLOUD_VERSION}
+
+      - name: 9- Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload future image to mock-attestation repository
+      - name: 10- Upload future-wasmcloud to local registry
         run: |
           regctl image copy \
             ocidir://future-wasmcloud:${WASMCLOUD_VERSION} \
@@ -154,85 +182,92 @@ jobs:
             --digest-tags \
             --referrers
 
-      - name: Stage wasmCloud binary
+      - name: 11- Get future-wasmcloud registry digest
+        id: digest
+        run: |
+          DIGEST=$(regctl image digest ghcr.io/${{ github.repository_owner }}/mock-attestation/mock-wasmcloud:${WASMCLOUD_VERSION})
+          echo "image_sha=${DIGEST}" >> $GITHUB_OUTPUT
+
+      - name: 12- Stage wasmCloud binary
         run: |
           mkdir -p staging
           curl -L -o staging/mock-wasmcloud \
             https://github.com/wasmCloud/wasmCloud/releases/download/v${WASMCLOUD_VERSION}/wasmcloud-x86_64-unknown-linux-musl
           chmod +x staging/mock-wasmcloud
 
-      - name: Get image digest
-        id: digest
-        run: |
-          DIGEST=$(regctl image digest ghcr.io/${{ github.repository_owner }}/mock-attestation/mock-wasmcloud:${WASMCLOUD_VERSION})
-          echo "sha=${DIGEST}" >> $GITHUB_OUTPUT
+      - name: 13- Upload artifacts for attestation
+        uses: actions/upload-artifact@v4
+        with:
+          name: attestation-inputs
+          path: |
+            staging/mock-wasmcloud
+            attestations-n-sboms/
+          retention-days: 1
+
     outputs:
-      digest: ${{ steps.digest.outputs.sha }}
+      digest: ${{ steps.digest.outputs.image_sha }}
       version: ${{ env.WASMCLOUD_VERSION }}
 
   attest-binary:
     needs: [test-attestation-setup]
     uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
     with:
-      artifact-type: binary
-      artifact-path: staging/mock-wasmcloud
-      artifact-name: mock-wasmcloud
+      type: binary
+      subject-path: staging/mock-wasmcloud
+      subject-name: mock-wasmcloud
+      source-name: wasmcloud
+      source-path: wasmcloud
+      version: ${{ needs.test-attestation-setup.outputs.version }}
       generate-sbom: true
-      is-rust: true
-      package-name: wasmcloud
-      package-version: ${{ needs.test-attestation-setup.outputs.version }}
-      package-path: wasmcloud
-      sbom-output-path: staging
+      source-language: rust
 
   attest-oci:
     needs: [test-attestation-setup]
     uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
     with:
-      artifact-type: oci
-      artifact-path: ghcr.io/${{ github.repository_owner }}/mock-attestation/mock-wasmcloud
-      artifact-name: mock-wasmcloud
+      type: oci
+      subject-name: ghcr.io/${{ github.repository_owner }}/mock-attestation/mock-wasmcloud
       subject-digest: ${{ needs.test-attestation-setup.outputs.digest }}
+      source-name: wasmcloud
+      source-path: wasmcloud
+      version: ${{ needs.test-attestation-setup.outputs.version }}
       generate-sbom: true
-      is-rust: true
-      package-name: wasmcloud
-      package-version: ${{ needs.test-attestation-setup.outputs.version }}
-      package-path: wasmcloud
-      sbom-output-path: staging
+      source-language: rust
 
-  # Language-specific SBOM generation and inspection
   attest-go:
     needs: [test-attestation-setup]
     uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
     with:
-      artifact-type: source
-      artifact-path: wasmcloud/examples/golang/components/http-hello-world
-      artifact-name: go-example
+      type: source
+      subject-path: wasmcloud/examples/golang/components/http-hello-world
+      subject-name: go-example
+      version: ${{ needs.test-attestation-setup.outputs.version }}
       generate-sbom: true
-      is-rust: false
-      sbom-output-path: sbom-eval
+      source-language: go
 
   attest-ts:
     needs: [test-attestation-setup]
     uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
     with:
-      artifact-type: source
-      artifact-path: wasmcloud/examples/typescript/components/http-hello-world
-      artifact-name: ts-example
+      type: source
+      subject-path: wasmcloud/examples/typescript/components/http-hello-world
+      subject-name: ts-example
+      version: ${{ needs.test-attestation-setup.outputs.version }}
       generate-sbom: true
-      is-rust: false
-      sbom-output-path: sbom-eval
+      source-language: typescript
 
   attest-py:
     needs: [test-attestation-setup]
     uses: ossfellow/mock-attestations/.github/workflows/attest.yml@main
     with:
-      artifact-type: source
-      artifact-path: wasmcloud/examples/python/components/http-hello-world
-      artifact-name: py-example
+      type: source
+      subject-path: wasmcloud/examples/python/components/http-hello-world
+      subject-name: py-example
+      version: ${{ needs.test-attestation-setup.outputs.version }}
       generate-sbom: true
-      is-rust: false
-      sbom-output-path: sbom-eval
+      source-language: python
 
+  # TODO: Use attestations-n-sboms for sbom and attestations verification
   verify:
     needs: [attest-binary, attest-oci]
     runs-on: ubuntu-22.04
@@ -308,6 +343,36 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           # Create release
+          gh release create v${WASMCLOUD_VERSION} \
+            --title "Mock wasmCloud v${WASMCLOUD_VERSION}" \
+            --notes "Mock release for testing attestation workflow" \
+            staging/mock-wasmcloud \
+            staging/mock-wasmcloud-${WASMCLOUD_VERSION}.spdx.json
+
+  # TODO move the GitHub release to verify jobn and the rest of this job
+  release:
+    needs: [verify]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload image to mock-attestation repository
+        run: |
+          regctl image copy \
+            ocidir://future-wasmcloud:${WASMCLOUD_VERSION} \
+            ghcr.io/${{ github.repository_owner }}/mock-attestation/mock-wasmcloud:${WASMCLOUD_VERSION} \
+            --digest-tags \
+            --referrers
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
           gh release create v${WASMCLOUD_VERSION} \
             --title "Mock wasmCloud v${WASMCLOUD_VERSION}" \
             --notes "Mock release for testing attestation workflow" \

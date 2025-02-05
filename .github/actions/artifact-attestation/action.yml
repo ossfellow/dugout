@@ -1,0 +1,98 @@
+name: 'Artifact Attestation'
+description: 'Attest artifacts of type `binary`, `image`, and `sbom`'
+inputs:
+  artifact-type:
+    description: 'Type of artifact to attest'
+    required: true
+    default: 'binary'
+  subject-path:
+    description: 'Path to the artifact serving as the subject of the attestation'
+    required: false
+  subject-digest:
+    description: 'SHA256 digest of the subject for the attestation'
+    required: false
+  subject-name:
+    description: 'Subject name as it should appear in the attestation'
+    required: true
+  subject-checksums:
+    description: 'Path to checksums file containing digest and name of subjects for attestation'
+    required: false
+  sbom-path:
+    description: 'Path to the JSON-formatted SBOM file to attest'
+    required: false
+  push-to-registry:
+    description: 'Whether to push the attestation to the image registry'
+    required: false
+    default: 'false'
+  show-summary:
+    description: 'Whether to attach a list of generated attestations to the workflow run summary page'
+    required: false
+    default: 'true'
+  github-token:
+    description: 'GitHub token used to make authenticated API requests'
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: attest-binaries-and-images
+      if: inputs.artifact-type == 'binary' || inputs.artifact-type == 'image'
+      uses: actions/attest-build-provenance@v2
+      with:
+        subject-path: ${{ (inputs.subject-digest || inputs.subject-checksums) && '' || inputs.subject-path }}
+        subject-digest: ${{ inputs.subject-digest }}
+        subject-name: ${{ inputs.subject-name }}
+        subject-checksums: ${{ inputs.subject-digest && '' ||  inputs.subject-checksums }}
+        push-to-registry: ${{ (inputs.artifact-type == 'image') && inputs.push-to-registry || 'false' }}
+        show-summary: ${{ inputs.show-summary }}
+        github-token: ${{ inputs.github-token }}
+
+    - name: download-sbom
+      if: inputs.artifact-type == 'sbom'
+      uses: actions/download-artifact@v2
+      with:
+        name: attestations-and-sboms
+        path: ${{ inputs.sbom-path }}
+
+    - name: attest-sbom
+      if: inputs.artifact-type == 'sbom'
+      uses: actions/attest-sbom@v2
+      with:
+        subject-path: ${{ (inputs.subject-digest || inputs.subject-checksums) && '' || inputs.subject-path }}
+        subject-digest: ${{ inputs.subject-digest }}
+        subject-name: ${{ inputs.subject-name }}
+        subject-checksums: ${{ inputs.subject-digest && '' ||  inputs.subject-checksums }}
+        sbom-path: ${{ inputs.sbom-path }}
+        push-to-registry: ${{ inputs.subject-name && inputs.subject-digest && inputs.push-to-registry || 'false' }}
+        show-summary: ${{ inputs.show-summary }}
+        github-token: ${{ inputs.github-token }}
+
+    - name: capture-attestation-metadata
+      shell: bash
+      run: |
+        # Preserve attestation metadata
+        echo "artifact-type: ${{ inputs.artifact-type }}" >> "${{ inputs.artifact-type }}-attestation-metadata.yaml"
+        echo "attestation_id: ${{ steps.attest-binaries-and-images.outputs.attestation-id }}" > "${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "attestation_url: ${{ steps.attest-binaries-and-images.outputs.attestation-url }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "bundle_path: ${{ steps.attest-binaries-and-images.outputs.bundle-path }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "artifact_type: ${{ inputs.artifact-type }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "subject_path: ${{ inputs.subject-path }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "subject_digest: ${{ inputs.subject-digest }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "subject_name: ${{ inputs.subject-name }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "subject_checksums: ${{ inputs.subject-checksums }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "sbom_path: ${{ inputs.sbom-path }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "push_to_registry: ${{ inputs.push-to-registry }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "show_summary: ${{ inputs.show-summary }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
+
+        # Copy and rename attestation file
+        cp "${{ steps.attest-binaries-and-images.outputs.bundle-path }}" "${{ inputs.subject-name }}-attestation.json"
+
+    - name: upload-artifacts
+      if: hashFiles(format('{0}-attestation.json', inputs.subject-name)) != ''
+      uses: actions/upload-artifact@v2
+      with:
+        name: attestations-and-sboms
+        path: |
+          ${{ inputs.subject-name }}-attestation.json
+          ${{ inputs.subject-name }}-attestation-metadata.yaml
