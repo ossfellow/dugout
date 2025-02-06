@@ -1,6 +1,11 @@
 name: 'Workflow Change Validation Checkout'
-description: 'Checkout the wasmCloud repository, and add/replace GitHub pipeline assets, which require testing and validation'
+description: 'Checkout repository and validate workflow changes'
+
 inputs:
+  target-repo:
+    description: 'Repository to test (e.g., https://github.com/user/repo)'
+    required: false
+    default: ${{ env.WORKFLOW_TEST_TARGET_REPO || 'wasmCloud/wasmCloud' }}
   fetch-depth:
     description: 'Number of commits to fetch. 0 fetches all history'
     required: false
@@ -16,10 +21,10 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Checkout wasmCloud repository
+    - name: Checkout target repository
       uses: actions/checkout@v4
       with:
-        repository: wasmCloud/wasmCloud
+        repository: ${{ inputs.target-repo }}
         token: ${{ secrets.GITHUB_TOKEN }}
         fetch-depth: ${{ inputs.fetch-depth }}
         fetch-tags: ${{ inputs.fetch-tags }}
@@ -27,7 +32,7 @@ runs:
     - name: Checkout workflow validation repository
       uses: actions/checkout@v4
       with:
-        path: doppleganger
+        path: dugout
         fetch-depth: ${{ inputs.fetch-depth }}
         fetch-tags: ${{ inputs.fetch-tags }}
 
@@ -40,6 +45,6 @@ runs:
             # Create directory if it doesn't exist
             mkdir -p "${{ github.workspace }}/.github/$(dirname $asset)"
             # Copy the file
-            cp "${{ github.workspace }}/doppleganger/.github/$asset" "${{ github.workspace }}/.github/$asset"
+            cp "${{ github.workspace }}/dugout/.github/$asset" "${{ github.workspace }}/.github/$asset"
           fi
         done

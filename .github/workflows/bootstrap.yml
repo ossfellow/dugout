@@ -1,1 +1,44 @@
-# TODO: This workflow is used to bootstrap the repository with the necessary assets to run the other workflows
+name: Bootstrap Test Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      target-repo:
+        required: true
+        type: string
+        description: "HTTP/Git URL of the repository to test (e.g., https://github.com/user/repo)"
+      github-assets:
+        required: true
+        type: string
+        description: "YAML list of workflows and actions to test (e.g. |
+          workflows/provider.yml
+          actions/artifact-attestation/action.yml
+          actions/oci-transformations/action.yml)"
+      test-workflow:
+        required: true
+        type: string
+        description: "Name of the workflow to trigger for testing"
+        default: "wasmcloud"
+
+env:
+  WORKFLOW_TEST_TARGET_REPO: ${{ inputs.target-repo }}
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: ./.github/actions/workflow-change-validation-checkout
+        with:
+          github-assets: ${{ inputs.github-assets }}
+
+      # Trigger test workflow
+      - name: Trigger test workflow
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: '${{ inputs.test-workflow }}.yml',
+              ref: context.ref
+            })

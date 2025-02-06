@@ -35,6 +35,5 @@ This repo provides a test environment to test and validate the following new, or
 - Testing binary and image attestations, in `provider.yml` workflow.
 - Testing SBOM generation and attestation for binaries and images produced by aforementioned custom workflows and their actions.
 - OCI image transformation and metadata enrichment.
-- Experimental OCI image creation for provider. archives.
 - Publishing all generated attestation and SBOM artifacts as searchable OCI artifacts.
 - Validation and demonstration reports to measure the quality of change outcomes.
