@@ -21,7 +21,7 @@ jobs:
       attestations: write
     # TODO: Validate this can correctly extract version number of released version of providers
     steps:
-      - uses: ./.github/actions/workflow-change-validation-checkout
+      - uses: ./dugout/.github/actions/workflow-change-validation-checkout
         with:
           github-assets: |
             ["actions/artifact-attestation/action.yml",
@@ -129,7 +129,7 @@ jobs:
           - bin-path: src/bin/blobstore-azure-provider
           - bin-path: src/bin/http-server-provider
     steps:
-      - uses: ./.github/actions/workflow-change-validation-checkout
+      - uses: ./dugout/.github/actions/workflow-change-validation-checkout
         with:
           github-assets: |
             ["actions/artifact-attestation/action.yml",

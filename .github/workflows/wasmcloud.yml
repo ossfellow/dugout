@@ -1,7 +1,7 @@
 name: wasmcloud
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
       component:
         required: true
@@ -20,7 +20,7 @@ jobs:
   setup-test-ref:
     runs-on: ubuntu-22.04
     steps:
-      - uses: ./.github/actions/workflow-change-validation-checkout
+      - uses: ./dugout/.github/actions/workflow-change-validation-checkout
         with:
           github-assets: |
             ["workflows/provider.yml",
@@ -55,7 +55,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: ./.github/actions/workflow-change-validation-checkout
+      - uses: ./dugout/.github/actions/workflow-change-validation-checkout
         with:
           github-assets: |
             ["workflows/provider.yml",
@@ -109,7 +109,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: ./.github/actions/workflow-change-validation-checkout
+      - uses: ./dugout/.github/actions/workflow-change-validation-checkout
         with:
           github-assets: |
             ["workflows/provider.yml",
@@ -167,7 +167,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: ./.github/actions/workflow-change-validation-checkout
+      - uses: ./dugout/.github/actions/workflow-change-validation-checkout
         with:
           github-assets: |
             ["workflows/provider.yml",
@@ -247,7 +247,7 @@ jobs:
       - build-wash-bin
       - build-wasmcloud-bin
     steps:
-      - uses: ./.github/actions/workflow-change-validation-checkout
+      - uses: ./dugout/.github/actions/workflow-change-validation-checkout
         with:
           github-assets: |
             ["workflows/provider.yml",
@@ -366,7 +366,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: ./.github/actions/workflow-change-validation-checkout
+      - uses: ./dugout/.github/actions/workflow-change-validation-checkout
         with:
           github-assets: |
             ["workflows/provider.yml",

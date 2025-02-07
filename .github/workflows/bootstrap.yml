@@ -7,6 +7,7 @@ on:
         required: true
         type: string
         description: "HTTP/Git URL of the repository to test (e.g., https://github.com/user/repo)"
+        default: "https://github.com/wasmCloud/wasmcloud"
       github-assets:
         required: true
         type: string
@@ -25,8 +26,16 @@ jobs:
   bootstrap:
     runs-on: ubuntu-22.04
     steps:
-      - uses: ./.github/actions/workflow-change-validation-checkout
+      # Only checkout dugout repository
+      - name: Checkout dugout repository
+        uses: actions/checkout@v4
         with:
+          path: dugout
+
+      # Use the local action to setup test environment
+      - uses: ./dugout/.github/actions/workflow-change-validation-checkout
+        with:
+          target-repo: ${{ inputs.target-repo }}
           github-assets: ${{ inputs.github-assets }}
 
       # Trigger test workflow
