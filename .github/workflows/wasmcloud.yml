@@ -23,6 +23,13 @@ jobs:
   setup-test-ref:
     runs-on: ubuntu-22.04
     steps:
+      # Debug step to show .github contents
+      - name: List .github directory contents
+        run: |
+          echo "=== .github directory structure ==="
+          find .github -type f 2>/dev/null | sort
+          echo "=== End of listing ==="
+
       - uses: ./.github/actions/workflow-change-validation-checkout
         with:
           github-assets: |
