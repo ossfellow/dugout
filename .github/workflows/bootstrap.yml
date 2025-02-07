@@ -10,10 +10,8 @@ on:
       github-assets:
         required: true
         type: string
-        description: "YAML list of workflows and actions to test (e.g. |
-          workflows/provider.yml
-          actions/artifact-attestation/action.yml
-          actions/oci-transformations/action.yml)"
+        description: 'JSON array of workflows and actions to test (e.g.: ["workflows/provider.yml","actions/artifact-attestation/action.yml"])'
+        default: '["workflows/wasmcloud.yml","workflows/provider.yml","actions/artifact-attestation/action.yml","actions/oci-transformations/action.yml","actions/sbom-generation/action.yml","actions/publish-sboms-and-attestations/action.yml"]'
       test-workflow:
         required: true
         type: string

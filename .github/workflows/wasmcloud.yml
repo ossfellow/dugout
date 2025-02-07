@@ -13,8 +13,8 @@ permissions:
 
 # Define versions at workflow level
 env:
-  WASMCLOUD_TEST_VERSION: "v1.51.1"  # wasmCloud version to test
-  WASH_TEST_VERSION: "wash-cli-v0.38.0"  # wash-cli version to test
+  WASMCLOUD_TEST_VERSION: "v1.51.1" # wasmCloud version to test
+  WASH_TEST_VERSION: "wash-cli-v0.38.0" # wash-cli version to test
 
 jobs:
   setup-test-ref:
@@ -22,12 +22,12 @@ jobs:
     steps:
       - uses: ./.github/actions/workflow-change-validation-checkout
         with:
-          github_assets: |
-            workflows/provider.yml
-            actions/artifact-attestation/action.yml
-            actions/oci-transformations/action.yml
-            actions/sbom-generation/action.yml
-            actions/publish-sboms-and-attestations/action.yml
+          github-assets: |
+            ["workflows/provider.yml",
+              "actions/artifact-attestation/action.yml",
+              "actions/oci-transformations/action.yml",
+              "actions/sbom-generation/action.yml",
+              "actions/publish-sboms-and-attestations/action.yml"]
 
       - name: Set up test tags
         run: |
@@ -57,12 +57,12 @@ jobs:
     steps:
       - uses: ./.github/actions/workflow-change-validation-checkout
         with:
-          github_assets: |
-            workflows/provider.yml
-            actions/artifact-attestation/action.yml
-            actions/oci-transformations/action.yml
-            actions/sbom-generation/action.yml
-            actions/publish-sboms-and-attestations/action.yml
+          github-assets: |
+            ["workflows/provider.yml",
+              "actions/artifact-attestation/action.yml",
+              "actions/oci-transformations/action.yml",
+              "actions/sbom-generation/action.yml",
+              "actions/publish-sboms-and-attestations/action.yml"]
       - uses: ./.github/actions/install-nix
       - uses: ./.github/actions/build-nix
         with:
@@ -111,12 +111,12 @@ jobs:
     steps:
       - uses: ./.github/actions/workflow-change-validation-checkout
         with:
-          github_assets: |
-            workflows/provider.yml
-            actions/artifact-attestation/action.yml
-            actions/oci-transformations/action.yml
-            actions/sbom-generation/action.yml
-            actions/publish-sboms-and-attestations/action.yml
+          github-assets: |
+            ["workflows/provider.yml",
+              "actions/artifact-attestation/action.yml",
+              "actions/oci-transformations/action.yml",
+              "actions/sbom-generation/action.yml",
+              "actions/publish-sboms-and-attestations/action.yml"]
       - uses: ./.github/actions/install-nix
       - uses: ./.github/actions/build-nix
         with:
@@ -169,12 +169,12 @@ jobs:
     steps:
       - uses: ./.github/actions/workflow-change-validation-checkout
         with:
-          github_assets: |
-            workflows/provider.yml
-            actions/artifact-attestation/action.yml
-            actions/oci-transformations/action.yml
-            actions/sbom-generation/action.yml
-            actions/publish-sboms-and-attestations/action.yml
+          github-assets: |
+            ["workflows/provider.yml",
+              "actions/artifact-attestation/action.yml",
+              "actions/oci-transformations/action.yml",
+              "actions/sbom-generation/action.yml",
+              "actions/publish-sboms-and-attestations/action.yml"]
       - uses: ./.github/actions/install-nix
       - uses: ./.github/actions/build-nix
         with:
@@ -249,14 +249,13 @@ jobs:
     steps:
       - uses: ./.github/actions/workflow-change-validation-checkout
         with:
-          github_assets: |
-            workflows/provider.yml
-            actions/artifact-attestation/action.yml
-            actions/oci-transformations/action.yml
-            actions/sbom-generation/action.yml
-            actions/publish-sboms-and-attestations/action.yml
+          github-assets: |
+            ["workflows/provider.yml",
+              "actions/artifact-attestation/action.yml",
+              "actions/oci-transformations/action.yml",
+              "actions/sbom-generation/action.yml",
+              "actions/publish-sboms-and-attestations/action.yml"]
       - uses: ./.github/actions/install-nix
-
       - name: Extract tag context
         id: ctx
         run: |
@@ -369,12 +368,12 @@ jobs:
     steps:
       - uses: ./.github/actions/workflow-change-validation-checkout
         with:
-          github_assets: |
-            workflows/provider.yml
-            actions/artifact-attestation/action.yml
-            actions/oci-transformations/action.yml
-            actions/sbom-generation/action.yml
-            actions/publish-sboms-and-attestations/action.yml
+          github-assets: |
+            ["workflows/provider.yml",
+              "actions/artifact-attestation/action.yml",
+              "actions/oci-transformations/action.yml",
+              "actions/sbom-generation/action.yml",
+              "actions/publish-sboms-and-attestations/action.yml"]
       - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         with:
           path: artifacts
