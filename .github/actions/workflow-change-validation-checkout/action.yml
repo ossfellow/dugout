@@ -37,6 +37,7 @@ runs:
       uses: actions/checkout@v4
       with:
         path: dugout
+        clean: false
 
     - name: Copy test target repository's GitHub assets
       if: inputs.github-assets

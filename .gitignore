@@ -25,3 +25,4 @@ snippets.yml
 .github/workflows/attest.yml
 .github/workflows/attestation-test.yml
 .github/workflows/old-wasmcloud.yml
+github-run.log
