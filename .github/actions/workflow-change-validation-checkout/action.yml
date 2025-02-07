@@ -1,26 +1,26 @@
-name: 'Workflow Change Validation Checkout'
-description: 'Checkout repository and validate workflow changes'
+name: "Workflow Change Validation Checkout"
+description: "Checkout repository and validate workflow changes"
 
 inputs:
   target-repo:
-    description: 'Repository to test (e.g., {owner}/{repo})'
+    description: "Repository to test (e.g., {owner}/{repo})"
     required: true
-    default: 'wasmCloud/wasmCloud'
+    default: "wasmCloud/wasmCloud"
   fetch-depth:
-    description: 'Number of commits to fetch. 0 fetches all history'
+    description: "Number of commits to fetch. 0 fetches all history"
     required: false
-    default: '1'
+    default: "1"
   fetch-tags:
-    description: 'Whether to fetch all tags'
+    description: "Whether to fetch all tags"
     required: false
-    default: 'false'
+    default: "false"
   github-assets:
-    description: 'List of .github assets to copy (path-qualified from .github/)'
+    description: "List of .github assets to copy (path-qualified from .github/)"
     required: false
   github-token:
-    description: 'GitHub token for authentication'
+    description: "GitHub token for authentication"
     required: false
-    default: ''
+    default: ""
 
 runs:
   using: "composite"
@@ -52,3 +52,8 @@ runs:
             cp "${{ github.workspace }}/dugout/.github/$asset" "${{ github.workspace }}/.github/$asset"
           fi
         done
+
+        # Always copy the custom checkout action
+        mkdir -p "${{ github.workspace }}/.github/actions/workflow-change-validation-checkout"
+        cp "${{ github.workspace }}/dugout/.github/actions/workflow-change-validation-checkout/action.yml" \
+          "${{ github.workspace }}/.github/actions/workflow-change-validation-checkout/action.yml"

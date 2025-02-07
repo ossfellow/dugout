@@ -11,7 +11,7 @@ Testing the underlying infrastructure of your `application environment` is often
 - Triggers your workflow to kick-start the tests.
 - Cleans GitHub package repository and releases, before test execution.
 
-To perform these services, it relies on a [custom checkout action](./dugout/.github/actions/workflow-change-validation-checkout/action.yml), and a [bootstrap workflow](./.github/workflows/bootstrap.yml), which receives, as input, the list of `to-be-copied-and-tested`, path-qualified, GitHub pipeline artifacts - which you have created in your `dugout fork` - and name of a `reusable workflow` that it will call after test environment is setup.
+To perform these services, it relies on a [custom checkout action](.github/actions/workflow-change-validation-checkout/action.yml), and a [bootstrap workflow](./.github/workflows/bootstrap.yml), which receives, as input, the list of `to-be-copied-and-tested`, path-qualified, GitHub pipeline artifacts - which you have created in your `dugout fork` - and name of a `reusable workflow` that it will call after test environment is setup.
 
 ### Usage Recommendations
 
