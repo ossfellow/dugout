@@ -1,5 +1,9 @@
 name: Bootstrap Test Environment
 
+permissions:
+  contents: read
+  actions: write    # Permission to trigger workflows
+
 on:
   workflow_dispatch:
     inputs:

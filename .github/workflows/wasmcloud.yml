@@ -10,6 +10,9 @@ on:
 
 permissions:
   contents: read
+  packages: write      # For pushing to registries
+  id-token: write     # For attestations
+  actions: write      # For triggering provider workflow
 
 # Define versions at workflow level
 env:
