@@ -40,6 +40,16 @@ jobs:
           github-assets: ${{ inputs.github-assets }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # Debug step to verify setup
+      - name: Verify test environment setup
+        run: |
+          echo "=== Current directory structure ==="
+          ls -la
+          echo
+          echo "=== .github directory structure ==="
+          find .github -type f | sort
+          echo "=== End of listing ==="
+
       # Trigger test workflow
       - name: Trigger test workflow
         uses: actions/github-script@v7
