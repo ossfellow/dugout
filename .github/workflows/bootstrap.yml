@@ -19,9 +19,6 @@ on:
         description: "Name of the workflow to trigger for testing"
         default: "wasmcloud"
 
-env:
-  WORKFLOW_TEST_TARGET_REPO: ${{ inputs.target-repo }}
-
 jobs:
   bootstrap:
     runs-on: ubuntu-22.04
@@ -37,6 +34,7 @@ jobs:
         with:
           target-repo: ${{ inputs.target-repo }}
           github-assets: ${{ inputs.github-assets }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       # Trigger test workflow
       - name: Trigger test workflow

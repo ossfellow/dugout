@@ -4,8 +4,8 @@ description: 'Checkout repository and validate workflow changes'
 inputs:
   target-repo:
     description: 'Repository to test (e.g., https://github.com/user/repo)'
-    required: false
-    default: ${{ env.WORKFLOW_TEST_TARGET_REPO || 'wasmCloud/wasmCloud' }}
+    required: true
+    default: 'wasmCloud/wasmCloud'
   fetch-depth:
     description: 'Number of commits to fetch. 0 fetches all history'
     required: false
@@ -17,6 +17,10 @@ inputs:
   github_assets:
     description: 'List of .github assets to copy (path-qualified from .github/)'
     required: false
+  github-token:
+    description: 'GitHub token for authentication'
+    required: false
+    default: ''
 
 runs:
   using: "composite"
@@ -25,7 +29,7 @@ runs:
       uses: actions/checkout@v4
       with:
         repository: ${{ inputs.target-repo }}
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ inputs.github-token }}
         fetch-depth: ${{ inputs.fetch-depth }}
         fetch-tags: ${{ inputs.fetch-tags }}
 
