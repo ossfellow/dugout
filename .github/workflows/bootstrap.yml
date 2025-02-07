@@ -6,8 +6,8 @@ on:
       target-repo:
         required: true
         type: string
-        description: "HTTP/Git URL of the repository to test (e.g., https://github.com/user/repo)"
-        default: "https://github.com/wasmCloud/wasmcloud"
+        description: "GitHub repository to test (e.g., {owner}/{repo})"
+        default: "wasmCloud/wasmcloud"
       github-assets:
         required: true
         type: string
