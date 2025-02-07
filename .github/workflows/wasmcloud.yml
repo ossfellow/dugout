@@ -23,7 +23,7 @@ jobs:
   setup-test-ref:
     runs-on: ubuntu-22.04
     steps:
-      - uses: ./dugout/.github/actions/workflow-change-validation-checkout
+      - uses: ${{ github.workspace }}/dugout/.github/actions/workflow-change-validation-checkout
         with:
           github-assets: |
             ["workflows/provider.yml",
@@ -58,7 +58,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: ./dugout/.github/actions/workflow-change-validation-checkout
+      - uses: ${{ github.workspace }}/dugout/.github/actions/workflow-change-validation-checkout
         with:
           github-assets: |
             ["workflows/provider.yml",
@@ -112,7 +112,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: ./dugout/.github/actions/workflow-change-validation-checkout
+      - uses: ${{ github.workspace }}/dugout/.github/actions/workflow-change-validation-checkout
         with:
           github-assets: |
             ["workflows/provider.yml",
@@ -170,7 +170,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: ./dugout/.github/actions/workflow-change-validation-checkout
+      - uses: ${{ github.workspace }}/dugout/.github/actions/workflow-change-validation-checkout
         with:
           github-assets: |
             ["workflows/provider.yml",
@@ -250,7 +250,7 @@ jobs:
       - build-wash-bin
       - build-wasmcloud-bin
     steps:
-      - uses: ./dugout/.github/actions/workflow-change-validation-checkout
+      - uses: ${{ github.workspace }}/dugout/.github/actions/workflow-change-validation-checkout
         with:
           github-assets: |
             ["workflows/provider.yml",
@@ -369,7 +369,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: ./dugout/.github/actions/workflow-change-validation-checkout
+      - uses: ${{ github.workspace }}/dugout/.github/actions/workflow-change-validation-checkout
         with:
           github-assets: |
             ["workflows/provider.yml",
