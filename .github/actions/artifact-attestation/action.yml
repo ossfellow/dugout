@@ -79,6 +79,9 @@ runs:
     - name: capture-attestation-metadata
       shell: bash
       run: |
+        # Make sure the attestations-and-sboms directory exists
+        mkdir -p attestations-and-sboms
+
         # Preserve attestation metadata file
         echo "# Build attestation metadata for: ${{ inputs.subject-name }}" > "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "artifact-type: ${{ inputs.artifact-type }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
@@ -92,9 +95,6 @@ runs:
         echo "sbom_path: ${{ inputs.sbom-path }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "push_to_registry: ${{ inputs.push-to-registry }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "show_summary: ${{ inputs.show-summary }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
-
-        # Make sure the attestations-and-sboms directory exists
-        mkdir -p attestations-and-sboms
 
         # Rename and save attestation file
         cp "${{ steps.attestation.outputs.bundle-path }}" attestations-and-sboms/"${{ inputs.subject-name }}-attestation.json"
