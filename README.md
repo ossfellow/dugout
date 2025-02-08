@@ -1,6 +1,6 @@
 # dugout
 
-Dugout bootstraps a safe environment to test, validate, and showcase, your new, or updated, GitHub pipeline `workflows` and `actions`, so you can focus on your work instead of test environment setup.
+Dugout bootstraps a safe environment to test, validate, and showcase, your new, or updated, GitHub `workflows` and `actions`, so you can focus on your work instead of test environment setup.
 
 ## Digging in
 
@@ -11,7 +11,7 @@ Testing the underlying infrastructure of your `application environment` is often
 - Triggers your workflow to kick-start the tests.
 - Cleans GitHub package repository and releases, before test execution.
 
-To perform these services, it relies on a [custom checkout action](.github/actions/workflow-change-validation-checkout/action.yml), and a [bootstrap workflow](./.github/workflows/bootstrap.yml), which receives, as input, the list of `to-be-copied-and-tested`, path-qualified, GitHub pipeline artifacts - which you have created in your `dugout fork` - and name of a `reusable workflow` that it will call after test environment is setup.
+To perform these services, it relies on a [custom checkout action](https://github.com/ossfellow/.github/blob/main/actions/tugboat/action.yml), and a [bootstrap workflow](https://github.com/ossfellow/dugout/blob/main/.github/workflows/bootstrap.yml), which receives, as input, the list of `to-be-copied-and-tested`, path-qualified, GitHub pipeline artifacts - which you have created in your `dugout fork` - and name of your test pipeline `starter workflow` that it will call after test environment is setup.
 
 ### Usage Recommendations
 
@@ -19,7 +19,7 @@ To perform these services, it relies on a [custom checkout action](.github/actio
 - Clearly label the [custom] workflow execution outputs (images, releases, etc).
 - Add reports, or extra logging, to custom workflows and actions.
 - Seed your custom workflows and actions with context proper baseline test data.
-- Attach a post-execution snapshot to your workflow update PR submission.
+- ❌❌❌ Attach a post-execution snapshot to your workflow update PR submission. ❌❌❌
 
 ### What's in the Oven?
 

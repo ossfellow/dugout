@@ -30,8 +30,9 @@ jobs:
           find .github -type f 2>/dev/null | sort
           echo "=== End of listing ==="
 
-      - uses: ./.github/actions/workflow-change-validation-checkout
+      - uses: ossfellow/.github/actions/tugboat@main
         with:
+          target-repo: "wasmCloud/wasmCloud"
           github-assets: |
             ["workflows/provider.yml",
               "actions/artifact-attestation/action.yml",
@@ -65,8 +66,9 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: ./.github/actions/workflow-change-validation-checkout
+      - uses: ossfellow/.github/actions/tugboat@main
         with:
+          target-repo: "wasmCloud/wasmCloud"
           github-assets: |
             ["workflows/provider.yml",
               "actions/artifact-attestation/action.yml",
@@ -119,8 +121,9 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: ./.github/actions/workflow-change-validation-checkout
+      - uses: ossfellow/.github/actions/tugboat@main
         with:
+          target-repo: "wasmCloud/wasmCloud"
           github-assets: |
             ["workflows/provider.yml",
               "actions/artifact-attestation/action.yml",
@@ -177,8 +180,9 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: ./.github/actions/workflow-change-validation-checkout
+      - uses: ossfellow/.github/actions/tugboat@main
         with:
+          target-repo: "wasmCloud/wasmCloud"
           github-assets: |
             ["workflows/provider.yml",
               "actions/artifact-attestation/action.yml",
@@ -257,8 +261,9 @@ jobs:
       - build-wash-bin
       - build-wasmcloud-bin
     steps:
-      - uses: ./.github/actions/workflow-change-validation-checkout
+      - uses: ossfellow/.github/actions/tugboat@main
         with:
+          target-repo: "wasmCloud/wasmCloud"
           github-assets: |
             ["workflows/provider.yml",
               "actions/artifact-attestation/action.yml",
@@ -376,8 +381,9 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: ./.github/actions/workflow-change-validation-checkout
+      - uses: ossfellow/.github/actions/tugboat@main
         with:
+          target-repo: "wasmCloud/wasmCloud"
           github-assets: |
             ["workflows/provider.yml",
               "actions/artifact-attestation/action.yml",

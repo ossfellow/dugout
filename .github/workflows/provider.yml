@@ -21,8 +21,9 @@ jobs:
       attestations: write
     # TODO: Validate this can correctly extract version number of released version of providers
     steps:
-      - uses: ./.github/actions/workflow-change-validation-checkout
+      - uses: ossfellow/.github/actions/tugboat@main
         with:
+          target-repo: "wasmCloud/wasmCloud"
           github-assets: |
             ["actions/artifact-attestation/action.yml",
               "actions/oci-transformations/action.yml",
@@ -129,8 +130,9 @@ jobs:
           - bin-path: src/bin/blobstore-azure-provider
           - bin-path: src/bin/http-server-provider
     steps:
-      - uses: ./.github/actions/workflow-change-validation-checkout
+      - uses: ossfellow/.github/actions/tugboat@main
         with:
+          target-repo: "wasmCloud/wasmCloud"
           github-assets: |
             ["actions/artifact-attestation/action.yml",
               "actions/oci-transformations/action.yml",

@@ -2,7 +2,7 @@ name: Bootstrap Test Environment
 
 permissions:
   contents: read
-  actions: write    # Permission to trigger workflows
+  actions: write # Permission to trigger workflows
 
 on:
   workflow_dispatch:
@@ -24,7 +24,51 @@ on:
         default: "wasmcloud"
 
 jobs:
+  cleanup:
+    runs-on: ubuntu-22.04
+    permissions:
+      packages: write # For deleting packages
+      contents: write # For deleting releases
+    steps:
+      - name: Delete existing packages and releases
+        continue-on-error: true # Don't fail if nothing to clean
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Delete packages
+            const packages = await github.rest.packages.listPackagesForOrganization({
+              org: context.repo.owner,
+              package_type: 'container'
+            });
+
+            for (const pkg of packages.data) {
+              if (pkg.repository?.name === context.repo.repo) {
+                console.log(`Deleting package ${pkg.name}`);
+                await github.rest.packages.deletePackageForOrg({
+                  org: context.repo.owner,
+                  package_type: 'container',
+                  package_name: pkg.name
+                });
+              }
+            }
+
+            // Delete releases
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+
+            for (const release of releases.data) {
+              console.log(`Deleting release ${release.tag_name}`);
+              await github.rest.repos.deleteRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.id
+              });
+            }
+
   bootstrap:
+    needs: cleanup # Make sure cleanup runs first
     runs-on: ubuntu-22.04
     steps:
       # Only checkout dugout repository
@@ -33,8 +77,8 @@ jobs:
         with:
           path: dugout
 
-      # Use the local action to setup test environment
-      - uses: ./dugout/.github/actions/workflow-change-validation-checkout
+      # Use the tugboat action to setup test environment
+      - uses: ossfellow/.github/actions/tugboat@main
         with:
           target-repo: ${{ inputs.target-repo }}
           github-assets: ${{ inputs.github-assets }}
