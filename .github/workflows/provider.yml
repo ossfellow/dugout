@@ -24,6 +24,7 @@ jobs:
       - uses: ossfellow/.github/actions/tugboat@main
         with:
           target-repo: "wasmCloud/wasmCloud"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           github-assets: |
             ["actions/artifact-attestation/action.yml",
               "actions/oci-transformations/action.yml",
@@ -133,6 +134,7 @@ jobs:
       - uses: ossfellow/.github/actions/tugboat@main
         with:
           target-repo: "wasmCloud/wasmCloud"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           github-assets: |
             ["actions/artifact-attestation/action.yml",
               "actions/oci-transformations/action.yml",

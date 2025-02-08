@@ -1,0 +1,14 @@
+steps:
+  - name: Checkout test target repository
+    uses: actions/checkout@v4
+    with:
+      repository: ${{ inputs.target-repo }}
+      token: ${{ inputs.github-token }}  # Pass through the token
+      fetch-depth: ${{ inputs.fetch-depth }}
+      fetch-tags: ${{ inputs.fetch-tags }}
+
+  - name: Checkout dugout repository
+    uses: actions/checkout@v4
+    with:
+      path: dugout
+      clean: false 
