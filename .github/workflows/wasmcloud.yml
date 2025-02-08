@@ -14,10 +14,15 @@ permissions:
   id-token: write     # For attestations
   actions: write      # For triggering provider workflow
 
-# Define versions at workflow level
+# Define test environment variables
 env:
+  TEST_THIS_WORKFLOW: true # Whether to test this workflow
   WASMCLOUD_TEST_VERSION: "v1.51.1" # wasmCloud version to test
   WASH_TEST_VERSION: "wash-cli-v0.38.0" # wash-cli version to test
+  RUN_BINARY_ATTESTATION: true # Whether to run the binary attestation workflow
+  RUN_PROVIDER_ATTESTATION: true # Whether to run the provider attestation workflow
+  RUN_OCI_ATTESTATION: true # Whether to run the OCI attestation workflow
+  RUN_PUBLISH_SBOMS_AND_ATTESTATIONS: true # Whether to run the publish SBOMS and attestations workflow
 
 jobs:
   setup-test-ref:
@@ -30,7 +35,9 @@ jobs:
           find .github -type f 2>/dev/null | sort
           echo "=== End of listing ==="
 
-      - uses: ossfellow/.github/actions/tugboat@main
+      - name: Prepare test environment
+        uses: ossfellow/.github/actions/tugboat@main
+        if: ${{ env.TEST_THIS_WORKFLOW }}
         with:
           target-repo: "wasmCloud/wasmCloud"
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -67,7 +74,9 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: ossfellow/.github/actions/tugboat@main
+      - name: Prepare test environment
+        uses: ossfellow/.github/actions/tugboat@main
+        if: ${{ env.TEST_THIS_WORKFLOW }}
         with:
           target-repo: "wasmCloud/wasmCloud"
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -85,6 +94,7 @@ jobs:
       # After build completes, attest binaries
       - name: Attest Built Wash Binaries
         uses: ./.github/actions/artifact-attestation
+        if: ${{ env.RUN_BINARY_ATTESTATION }}
         with:
           subject-path: ./wash-${{ matrix.config.target }}/bin/wash
           subject-name: wash-${{ matrix.config.target }}
@@ -94,6 +104,7 @@ jobs:
       # After attestation, generate SBOMs
       - name: Generate SBOMs for Wash
         uses: ./.github/actions/sbom-generation
+        if: ${{ env.RUN_BINARY_ATTESTATION }}
         with:
           artifact-path: ./wash-${{ matrix.config.target }}/bin/wash
           artifact-name: wash-${{ matrix.config.target }}
@@ -103,6 +114,7 @@ jobs:
       # Attest SBOMs
       - name: Attest SBOMs for Wash
         uses: ./.github/actions/artifact-attestation
+        if: ${{ env.RUN_BINARY_ATTESTATION }}
         with:
           artifact-type: sbom
           subject-path: ./wash-${{ matrix.config.target }}/bin/wash
@@ -123,7 +135,9 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: ossfellow/.github/actions/tugboat@main
+      - name: Prepare test environment
+        uses: ossfellow/.github/actions/tugboat@main
+        if: ${{ env.TEST_THIS_WORKFLOW }}
         with:
           target-repo: "wasmCloud/wasmCloud"
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -141,6 +155,7 @@ jobs:
       # After build completes, attest binaries
       - name: Attest Built WasmCloud Binaries
         uses: ./.github/actions/artifact-attestation
+        if: ${{ env.RUN_BINARY_ATTESTATION }}
         with:
           subject-path: ./wasmcloud-${{ matrix.config.target }}/bin/wasmcloud
           subject-name: wasmcloud-${{ matrix.config.target }}
@@ -150,6 +165,7 @@ jobs:
       # After attestation, generate SBOMs
       - name: Generate SBOMs for WasmCloud
         uses: ./.github/actions/sbom-generation
+        if: ${{ env.RUN_BINARY_ATTESTATION }}
         with:
           artifact-path: ./wasmcloud-${{ matrix.config.target }}/bin/wasmcloud
           artifact-name: wasmcloud-${{ matrix.config.target }}
@@ -159,6 +175,7 @@ jobs:
       # Attest SBOMs
       - name: Attest SBOMs for WasmCloud
         uses: ./.github/actions/artifact-attestation
+        if: ${{ env.RUN_BINARY_ATTESTATION }}
         with:
           artifact-type: sbom
           subject-path: ./wasmcloud-${{ matrix.config.target }}/bin/wasmcloud
@@ -183,7 +200,9 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: ossfellow/.github/actions/tugboat@main
+      - name: Prepare test environment
+        uses: ossfellow/.github/actions/tugboat@main
+        if: ${{ env.TEST_THIS_WORKFLOW }}
         with:
           target-repo: "wasmCloud/wasmCloud"
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -201,6 +220,7 @@ jobs:
       # After build completes, attest binaries
       - name: Attest Built Provider Binaries
         uses: ./.github/actions/artifact-attestation
+        if: ${{ env.RUN_PROVIDER_ATTESTATION }}
         with:
           subject-path: ./${{ matrix.name }}-provider-${{ matrix.target }}/bin/${{ matrix.name }}-provider
           subject-name: ${{ matrix.name }}-provider-${{ matrix.target }}
@@ -210,6 +230,7 @@ jobs:
       # After attestation, generate SBOMs
       - name: Generate SBOMs for Provider
         uses: ./.github/actions/sbom-generation
+        if: ${{ env.RUN_PROVIDER_ATTESTATION }}
         with:
           artifact-path: ./${{ matrix.name }}-provider-${{ matrix.target }}/bin/${{ matrix.name }}-provider
           artifact-name: ${{ matrix.name }}-provider-${{ matrix.target }}
@@ -219,6 +240,7 @@ jobs:
       # Attest SBOMs
       - name: Attest SBOMs for Provider
         uses: ./.github/actions/artifact-attestation
+        if: ${{ env.RUN_PROVIDER_ATTESTATION }}
         with:
           artifact-type: sbom
           subject-path: ./${{ matrix.name }}-provider-${{ matrix.target }}/bin/${{ matrix.name }}-provider
@@ -265,7 +287,9 @@ jobs:
       - build-wash-bin
       - build-wasmcloud-bin
     steps:
-      - uses: ossfellow/.github/actions/tugboat@main
+      - name: Prepare test environment
+        uses: ossfellow/.github/actions/tugboat@main
+        if: ${{ env.TEST_THIS_WORKFLOW }}
         with:
           target-repo: "wasmCloud/wasmCloud"
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -306,7 +330,7 @@ jobs:
           nix build -L .#${{ matrix.bin }}-oci-wolfi -o ./oci-wolfi
 
       - name: Inspect current ${{ matrix.bin}} image configuration files (Image Manifest V 2, Schema 2 - aka. Docker Distribution format)
-        if: ${{ github.repository_owner == 'ossfellow' }}
+        if: ${{ env.TEST_THIS_WORKFLOW }}
         run: |
           mkdir -p ${{ matrix.bin}}
           skopeo copy --all oci-archive:./oci-wolfi dir:${{ matrix.bin}}
@@ -341,12 +365,13 @@ jobs:
 
       - name: Upload OCI directory to oci directory
         uses: actions/upload-artifact@v4
+        if: ${{ env.TEST_THIS_WORKFLOW }}
         with:
           name: wolfi
           path: ./oci-wolfi
 
       - name: Push `${{ matrix.bin }}` version tag
-        if: startswith(github.ref, format('refs/tags/{0}v', matrix.prefix))
+        if: ${{ env.RUN_OCI_ATTESTATION }} && startswith(github.ref, format('refs/tags/{0}v', matrix.prefix))
         continue-on-error: ${{ github.repository_owner != 'wasmCloud' }}
         uses: ./.github/actions/oci-transformations
         with:
@@ -386,7 +411,9 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: ossfellow/.github/actions/tugboat@main
+      - name: Prepare test environment
+        uses: ossfellow/.github/actions/tugboat@main
+        if: ${{ env.TEST_THIS_WORKFLOW }}
         with:
           target-repo: "wasmCloud/wasmCloud"
           github-assets: |
@@ -418,7 +445,9 @@ jobs:
           done
 
       # Publish SBOMs and Attestation records
-      - uses: ./.github/actions/publish-sboms-and-attestations
+      - name: Publish SBOMs and Attestation records
+        uses: ./.github/actions/publish-sboms-and-attestations
+        if: ${{ env.RUN_PUBLISH_SBOMS_AND_ATTESTATIONS }}
         with:
           release_version: ${{ env.WASMCLOUD_TEST_VERSION }}-docs
           registry: ghcr.io
@@ -432,7 +461,8 @@ jobs:
             ]
 
       # For wasmCloud releases
-      - uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974
+      - name: Publish wasmCloud release
+        uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974
         if: startsWith(github.ref, 'refs/tags/v')
         with:
           generate_release_notes: true
@@ -440,7 +470,8 @@ jobs:
           files: ./wasmcloud/*
 
       # For wash-cli releases
-      - uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974
+      - name: Publish wash-cli release
+        uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974
         if: startsWith(github.ref, 'refs/tags/wash-cli-v')
         with:
           generate_release_notes: true
@@ -449,6 +480,7 @@ jobs:
 
       # Generate release notes with SBOM/attestation info
       - name: Generate Release Notes
+        if: ${{ env.RUN_PUBLISH_SBOMS_AND_ATTESTATIONS }}
         shell: bash
         run: |
           cat > release-notes.md << 'EOF'
