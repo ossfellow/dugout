@@ -37,6 +37,7 @@ runs:
   using: "composite"
   steps:
     - name: attest-binaries-and-images
+      id: attestation
       if: inputs.artifact-type == 'binary' || inputs.artifact-type == 'image'
       uses: actions/attest-build-provenance@v2
       with:
@@ -73,9 +74,9 @@ runs:
       run: |
         # Preserve attestation metadata
         echo "artifact-type: ${{ inputs.artifact-type }}" >> "${{ inputs.artifact-type }}-attestation-metadata.yaml"
-        echo "attestation_id: ${{ steps.attest-binaries-and-images.outputs.attestation-id }}" > "${{ inputs.subject-name }}-attestation-metadata.yaml"
-        echo "attestation_url: ${{ steps.attest-binaries-and-images.outputs.attestation-url }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
-        echo "bundle_path: ${{ steps.attest-binaries-and-images.outputs.bundle-path }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "attestation_id: ${{ steps.attestation.outputs.attestation-id }}" > "${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "attestation_url: ${{ steps.attestation.outputs.attestation-url }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "bundle_path: ${{ steps.attestation.outputs.bundle-path }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "artifact_type: ${{ inputs.artifact-type }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "subject_path: ${{ inputs.subject-path }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "subject_digest: ${{ inputs.subject-digest }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
@@ -86,7 +87,7 @@ runs:
         echo "show_summary: ${{ inputs.show-summary }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
 
         # Copy and rename attestation file
-        cp "${{ steps.attest-binaries-and-images.outputs.bundle-path }}" "${{ inputs.subject-name }}-attestation.json"
+        cp "${{ steps.attestation.outputs.bundle-path }}" "${{ inputs.subject-name }}-attestation.json"
 
     - name: upload-artifacts
       if: hashFiles(format('{0}-attestation.json', inputs.subject-name)) != ''
