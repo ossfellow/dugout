@@ -69,31 +69,35 @@ runs:
         show-summary: ${{ inputs.show-summary }}
         github-token: ${{ inputs.github-token }}
 
+    - name: download-existing-artifacts
+      uses: actions/download-artifact@v4
+      continue-on-error: true  # Don't fail if there are no existing artifacts
+      with:
+        name: attestations-and-sboms
+        path: attestations-and-sboms
+
     - name: capture-attestation-metadata
       shell: bash
       run: |
-        # Preserve attestation metadata
-        echo "artifact-type: ${{ inputs.artifact-type }}" >> "${{ inputs.artifact-type }}-attestation-metadata.yaml"
-        echo "attestation_id: ${{ steps.attestation.outputs.attestation-id }}" > "${{ inputs.subject-name }}-attestation-metadata.yaml"
-        echo "attestation_url: ${{ steps.attestation.outputs.attestation-url }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
-        echo "bundle_path: ${{ steps.attestation.outputs.bundle-path }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
-        echo "artifact_type: ${{ inputs.artifact-type }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
-        echo "subject_path: ${{ inputs.subject-path }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
-        echo "subject_digest: ${{ inputs.subject-digest }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
-        echo "subject_name: ${{ inputs.subject-name }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
-        echo "subject_checksums: ${{ inputs.subject-checksums }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
-        echo "sbom_path: ${{ inputs.sbom-path }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
-        echo "push_to_registry: ${{ inputs.push-to-registry }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
-        echo "show_summary: ${{ inputs.show-summary }}" >> "${{ inputs.subject-name }}-attestation-metadata.yaml"
+        # Preserve attestation metadata file
+        echo "artifact-type: ${{ inputs.artifact-type }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "attestation_id: ${{ steps.attestation.outputs.attestation-id }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "attestation_url: ${{ steps.attestation.outputs.attestation-url }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "artifact_type: ${{ inputs.artifact-type }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "subject_path: ${{ inputs.subject-path }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "subject_digest: ${{ inputs.subject-digest }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "subject_name: ${{ inputs.subject-name }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "subject_checksums: ${{ inputs.subject-checksums }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "sbom_path: ${{ inputs.sbom-path }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "push_to_registry: ${{ inputs.push-to-registry }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "show_summary: ${{ inputs.show-summary }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
 
-        # Copy and rename attestation file
-        cp "${{ steps.attestation.outputs.bundle-path }}" "${{ inputs.subject-name }}-attestation.json"
+        # Rename and save attestation file
+        cp "${{ steps.attestation.outputs.bundle-path }}" attestations-and-sboms/"${{ inputs.subject-name }}-attestation.json"
 
     - name: upload-artifacts
-      if: hashFiles(format('{0}-attestation.json', inputs.subject-name)) != ''
       uses: actions/upload-artifact@v4
       with:
         name: attestations-and-sboms
-        path: |
-          ${{ inputs.subject-name }}-attestation.json
-          ${{ inputs.subject-name }}-attestation-metadata.yaml
+        path: attestations-and-sboms
+        overwrite: true
