@@ -202,7 +202,7 @@ jobs:
       - name: Attest Built Provider Binaries
         uses: ./.github/actions/artifact-attestation
         with:
-          subject-path: ./artifacts/${{ matrix.name }}-provider-${{ matrix.target }}/bin/${{ matrix.name }}-provider
+          subject-path: ./${{ matrix.name }}-provider-${{ matrix.target }}/bin/${{ matrix.name }}-provider
           subject-name: ${{ matrix.name }}-provider-${{ matrix.target }}
           show-summary: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -211,7 +211,7 @@ jobs:
       - name: Generate SBOMs for Provider
         uses: ./.github/actions/sbom-generation
         with:
-          artifact-path: ./artifacts/${{ matrix.name }}-provider-${{ matrix.target }}/bin/${{ matrix.name }}-provider
+          artifact-path: ./${{ matrix.name }}-provider-${{ matrix.target }}/bin/${{ matrix.name }}-provider
           artifact-name: ${{ matrix.name }}-provider-${{ matrix.target }}
           language: rust
           package-name: ${{ matrix.name }}-provider
@@ -221,7 +221,7 @@ jobs:
         uses: ./.github/actions/artifact-attestation
         with:
           artifact-type: sbom
-          subject-path: ./artifacts/${{ matrix.name }}-provider-${{ matrix.target }}/bin/${{ matrix.name }}-provider
+          subject-path: ./${{ matrix.name }}-provider-${{ matrix.target }}/bin/${{ matrix.name }}-provider
           subject-name: ${{ matrix.name }}-provider-${{ matrix.target }}
           sbom-path: ./artifacts/${{ matrix.name }}-provider-${{ matrix.target }}/bin/${{ matrix.name }}-provider.spdx.json
           show-summary: true
