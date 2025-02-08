@@ -80,6 +80,7 @@ runs:
       shell: bash
       run: |
         # Preserve attestation metadata file
+        touch "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "artifact-type: ${{ inputs.artifact-type }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "attestation_id: ${{ steps.attestation.outputs.attestation-id }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "attestation_url: ${{ steps.attestation.outputs.attestation-url }}" >> "attestations-and-sboms/${{ inputs.subject-name }}-attestation-metadata.yaml"
