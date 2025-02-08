@@ -86,7 +86,7 @@ jobs:
       - name: Attest Built Wash Binaries
         uses: ./.github/actions/artifact-attestation
         with:
-          subject-path: ./artifacts/wash-${{ matrix.config.target }}/bin/wash
+          subject-path: ./wash-${{ matrix.config.target }}/bin/wash
           subject-name: wash-${{ matrix.config.target }}
           show-summary: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -95,7 +95,7 @@ jobs:
       - name: Generate SBOMs for Wash
         uses: ./.github/actions/sbom-generation
         with:
-          artifact-path: ./artifacts/wash-${{ matrix.config.target }}/bin/wash
+          artifact-path: ./wash-${{ matrix.config.target }}/bin/wash
           artifact-name: wash-${{ matrix.config.target }}
           language: rust
           package-name: wash
@@ -105,7 +105,7 @@ jobs:
         uses: ./.github/actions/artifact-attestation
         with:
           artifact-type: sbom
-          subject-path: ./artifacts/wash-${{ matrix.config.target }}/bin/wash
+          subject-path: ./wash-${{ matrix.config.target }}/bin/wash
           subject-name: wash-${{ matrix.config.target }}
           sbom-path: ./artifacts/wash-${{ matrix.config.target }}/bin/wash.spdx.json
           show-summary: true
@@ -142,7 +142,7 @@ jobs:
       - name: Attest Built WasmCloud Binaries
         uses: ./.github/actions/artifact-attestation
         with:
-          subject-path: ./artifacts/wasmcloud-${{ matrix.config.target }}/bin/wasmcloud
+          subject-path: ./wasmcloud-${{ matrix.config.target }}/bin/wasmcloud
           subject-name: wasmcloud-${{ matrix.config.target }}
           show-summary: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -151,7 +151,7 @@ jobs:
       - name: Generate SBOMs for WasmCloud
         uses: ./.github/actions/sbom-generation
         with:
-          artifact-path: ./artifacts/wasmcloud-${{ matrix.config.target }}/bin/wasmcloud
+          artifact-path: ./wasmcloud-${{ matrix.config.target }}/bin/wasmcloud
           artifact-name: wasmcloud-${{ matrix.config.target }}
           language: rust
           package-name: wasmcloud
@@ -161,7 +161,7 @@ jobs:
         uses: ./.github/actions/artifact-attestation
         with:
           artifact-type: sbom
-          subject-path: ./artifacts/wasmcloud-${{ matrix.config.target }}/bin/wasmcloud
+          subject-path: ./wasmcloud-${{ matrix.config.target }}/bin/wasmcloud
           subject-name: wasmcloud-${{ matrix.config.target }}
           sbom-path: ./artifacts/wasmcloud-${{ matrix.config.target }}/bin/wasmcloud.spdx.json
           show-summary: true
