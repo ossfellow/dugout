@@ -16,6 +16,9 @@ inputs:
   image-version:
     description: "Version of the image"
     required: false
+  image-authors:
+    description: "Authors of the image"
+    required: false
   target-registries:
     description: "List of target registries to push to"
     required: false
@@ -25,6 +28,14 @@ inputs:
   default-tags:
     description: "List of tags to apply to base image"
     required: false
+  vendor:
+    description: "Vendor of the image"
+    required: false
+    default: "wasmCloud"
+  source-repository:
+    description: "Source repository of the image"
+    required: false
+    default: "https://github.com/wasmCloud/wasmCloud"
   show-metadata:
     description: "Whether to print image metadata during transformation"
     required: false
@@ -60,7 +71,7 @@ runs:
         fi
 
     # Download from registry if not an OCI directory or archive
-    - name: Download from registry
+    - name: Download ${{ inputs.source-image }}:${{ inputs.source-tag }} from registry
       if: ${{ !startsWith(inputs.source-image, 'ocidir://') && !startsWith(inputs.source-image, 'oci-archive://') }}
       shell: bash
       run: |
@@ -79,8 +90,64 @@ runs:
           --digest-tags \
           --referrers
 
-    # Show metadata if requested
-    - name: Show image metadata
+    # Enrich metadata
+    - name: Enrich ${{ inputs.source-image }}:${{ inputs.source-tag }} image metadata
+      shell: bash
+      run: |
+        IMAGE_PATH="${{ startsWith(inputs.source-image, 'ocidir://') && inputs.source-image || 'ocidir://workspace' }}"
+
+        # Process each platform-specific manifest
+        for digest in $(regctl image manifest ${IMAGE_PATH}:${{ inputs.source-tag }} -v error | yq -r '.Manifests | with_entries(select(.key | test("Digest"))) | to_entries | .[].value'); do
+          echo "Processing manifest $digest"
+
+          # Get current annotations from platform manifest
+          CURRENT_ANNOTATIONS=$(regctl blob get ${IMAGE_PATH}:${{ inputs.source-tag }} ${digest} -v error | yq -r '.annotations // {}')
+
+          # Build annotation arguments
+          ANNOTATION_ARGS=""
+
+          # Required annotations
+          if ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.created"]' >/dev/null; then
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          fi
+
+          if ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.title"]' >/dev/null; then
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.title=${{ inputs.image-title }}"
+          fi
+
+          # Optional annotations
+          if [ ! -z "${{ inputs.image-authors }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.authors"]' >/dev/null; then
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.authors=${{ inputs.image-authors }}"
+          fi
+
+          if [ ! -z "${{ inputs.vendor }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.vendor"]' >/dev/null; then
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.vendor=${{ inputs.vendor }}"
+          fi
+
+          if [ ! -z "${{ inputs.source-repository }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.source"]' >/dev/null; then
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.source=${{ inputs.source-repository }}"
+          fi
+
+          if [ ! -z "${{ inputs.image-description }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.description"]' >/dev/null; then
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.description=${{ inputs.image-description }}"
+          fi
+
+          if [ ! -z "${{ inputs.image-version }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.version"]' >/dev/null; then
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.version=${{ inputs.image-version }}"
+          fi
+
+          # Always run regctl for OCI conversion, add annotations if any
+          regctl image mod \
+            ${IMAGE_PATH}@${digest} \
+            --replace \
+            --to-oci \
+            --to-oci-referrers \
+            --label-to-annotation \
+            ${ANNOTATION_ARGS}
+        done
+
+    # Show image metadata if requested
+    - name: Show ${{ inputs.source-image }}:${{ inputs.source-tag }} image enriched metadata
       if: inputs.show-metadata == 'true'
       shell: bash
       run: |
@@ -102,60 +169,8 @@ runs:
           echo
         done
 
-    # Enrich metadata
-    - name: Enrich image metadata
-      shell: bash
-      run: |
-        IMAGE_PATH="${{ startsWith(inputs.source-image, 'ocidir://') && inputs.source-image || 'ocidir://workspace' }}"
-
-        # Process each platform-specific manifest
-        for digest in $(regctl image manifest ${IMAGE_PATH}:${{ inputs.source-tag }} -v error | yq -r '.Manifests | with_entries(select(.key | test("Digest"))) | to_entries | .[].value'); do
-          echo "Processing manifest $digest"
-
-          # Get current annotations from platform manifest
-          CURRENT_ANNOTATIONS=$(regctl blob get ${IMAGE_PATH}:${{ inputs.source-tag }} ${digest} -v error | yq -r '.annotations // {}')
-
-          # Build annotation arguments
-          ANNOTATION_ARGS=""
-
-          # Required annotations
-          if ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.created"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          fi
-
-          if ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.vendor"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.vendor=wasmCloud"
-          fi
-
-          if ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.source"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.source=https://github.com/wasmCloud/wasmCloud"
-          fi
-
-          if ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.title"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.title=${{ inputs.image-title }}"
-          fi
-
-          # Optional annotations
-          if [ ! -z "${{ inputs.image-description }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.description"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.description=${{ inputs.image-description }}"
-          fi
-
-          if [ ! -z "${{ inputs.image-version }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.version"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.version=${{ inputs.image-version }}"
-          fi
-
-          # Always run regctl for OCI conversion, add annotations if any
-          regctl image mod \
-            ${IMAGE_PATH}@${digest} \
-            --replace \
-            --to-oci \
-            --to-oci-referrers \
-            --label-to-annotation \
-            ${ANNOTATION_ARGS}
-        done
-
     # Push to target registries
-    - name: Push to registries
+    - name: Push to target registries
       if: inputs.target-registries
       shell: bash
       run: |
@@ -164,8 +179,21 @@ runs:
         # Login to registries if credentials provided
         if [ ! -z "${{ inputs.registry-credentials }}" ]; then
           echo "${{ inputs.registry-credentials }}" | jq -r '.[] | "\(.url) \(.username) \(.password)"' | while read url username password; do
-            echo "Logging in to $url"
-            echo "$password" | regctl registry login -u "$username" --pass-stdin "$url"
+            # Handle different registry types
+            case "$url" in
+              "docker.io"|"registry-1.docker.io")
+                # Docker Hub needs no URL for login
+                echo "$password" | regctl registry login -u "$username" --pass-stdin
+                ;;
+              *.azurecr.io)
+                # Azure Container Registry
+                echo "$password" | regctl registry login -u "$username" --pass-stdin "$url"
+                ;;
+              *)
+                # GitHub Container Registry and others
+                echo "$password" | regctl registry login -u "$username" --pass-stdin "$url"
+                ;;
+            esac
           done
         fi
 

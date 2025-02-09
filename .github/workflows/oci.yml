@@ -1,0 +1,137 @@
+name: oci-release
+
+on:
+  workflow_call:
+    inputs:
+      bin:
+        description: Binary name
+        required: true
+        type: string
+      prefix:
+        description: Prefix name
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+  attestations: write
+
+env:
+  TEST_THIS_WORKFLOW: true # Whether to test this workflow
+  RUN_OCI_ATTESTATION: true # Whether to run the OCI attestation workflow
+
+jobs:
+  oci:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Prepare test environment
+        uses: ossfellow/.github/actions/tugboat@main
+        if: ${{ env.TEST_THIS_WORKFLOW }}
+        with:
+          target-repo: "wasmCloud/wasmCloud"
+          github-assets: |
+            ["actions/oci-transformations/action.yml"]
+
+      - name: Install `nix`
+        uses: ./.github/actions/install-nix
+
+      - name: Extract tag context
+        id: ctx
+        run: |
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+          echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+          version=${GITHUB_REF_NAME#${{ inputs.prefix }}v}
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "version is ${version}"
+          if [[ $version == *"-"* ]]; then
+            echo "version ${version} is a pre-release"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Login to GitHub Container Registry
+        if: startswith(github.ref, format('refs/tags/{0}v', inputs.prefix)) || github.ref == 'refs/heads/main'
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install `skopeo`
+        run: nix profile install --fallback --inputs-from . 'nixpkgs#skopeo'
+
+      - name: Build `${{ inputs.bin }}` image
+        run: |
+          nix build -L .#${{ inputs.bin }}-oci-wolfi -o ./oci-wolfi
+
+      - name: Inspect current ${{ inputs.bin}} image configuration files (Image Manifest V 2, Schema 2 - aka. Docker Distribution format)
+        if: ${{ env.TEST_THIS_WORKFLOW }}
+        run: |
+          mkdir -p ${{ inputs.bin}}
+          skopeo copy --all oci-archive:./oci-wolfi dir:${{ inputs.bin}}
+
+          echo "=== Image Manifest List ==="
+          yq -P -oy ${inputs.bin}/manifest.json
+          echo
+
+          echo "=== Processing Individual Manifests ==="
+          for digest in $(yq -r '.manifests.[].digest' ${inputs.bin}/manifest.json); do
+            sha=${digest#sha256:}
+            echo
+            echo "=== Manifest for $digest ==="
+            yq -P -oy ${inputs.bin}/${sha}.manifest.json
+            echo
+
+            # Get config digest and show its contents
+            config_digest=$(yq -r '.config.digest' ${inputs.bin}/${sha}.manifest.json)
+            config_sha=${config_digest#sha256:}
+            echo
+            echo "=== Config for $config_digest ==="
+            yq -P -oy ${inputs.bin}/${config_sha}.config.json
+            echo
+          done
+
+      # - name: Convert to OCI directory format
+      #   run: |
+      #     mkdir -p ./oci-dir-wolfi
+
+      #     # Convert Wolfi image
+      #     skopeo copy --all oci-archive:./oci-wolfi oci:./wolfi
+
+      - name: Upload OCI archive
+        uses: actions/upload-artifact@v4
+        if: ${{ env.TEST_THIS_WORKFLOW }}
+        with:
+          name: wolfi
+          path: ./oci-wolfi
+
+      - name: Push `${{ inputs.bin }}` version tag
+        if: ${{ env.RUN_OCI_ATTESTATION }} && startswith(github.ref, format('refs/tags/{0}v', matrix.prefix))
+        continue-on-error: ${{ env.TEST_THIS_WORKFLOW }}
+        uses: ./.github/actions/oci-transformations
+        with:
+          source-image: oci-archive:./oci-wolfi
+          source-tag: ${{ steps.ctx.outputs.version }}
+          image-title: ${{ inputs.bin }}
+          image-description: "${{ inputs.bin == 'wasmcloud' && 'wasmCloud runtime (Wolfi)' || 'wash CLI tool (Wolfi)' }}"
+          image-version: ${{ steps.ctx.outputs.version }}
+          image-authors: "automation@wasmcloud.com"
+          target-registries: |
+            ghcr.io/${{ steps.ctx.outputs.owner }}
+          image-variants: |
+            [
+              {
+                "name": "wolfi",
+                "tags": ["${{ steps.ctx.outputs.version }}-wolfi"]
+              }
+            ]
+          registry-credentials: |
+            [
+              {
+                "url": "ghcr.io",
+                "username": "${{ github.actor }}",
+                "password": "${{ secrets.GITHUB_TOKEN }}"
+              }
+            ]

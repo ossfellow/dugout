@@ -122,7 +122,6 @@ jobs:
           artifact-type: sbom
           subject-path: ghcr.io/${{ steps.ctx.outputs.owner }}/${{ inputs.name }}:${{ steps.ctx.outputs.version }}
           subject-name: ${{ inputs.name }}-provider
-          sbom-path: ./artifacts/wasmcloud-aarch64-apple-darwin/bin/${{ inputs.name }}-provider.cdx.json
           show-summary: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
           push-to-registry: true

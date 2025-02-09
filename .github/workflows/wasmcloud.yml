@@ -41,12 +41,6 @@ jobs:
         with:
           target-repo: "wasmCloud/wasmCloud"
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          github-assets: |
-            ["workflows/provider.yml",
-              "actions/artifact-attestation/action.yml",
-              "actions/oci-transformations/action.yml",
-              "actions/sbom-generation/action.yml",
-              "actions/publish-sboms-and-attestations/action.yml"]
 
       - name: Set up test tags
         run: |
@@ -81,11 +75,9 @@ jobs:
           target-repo: "wasmCloud/wasmCloud"
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-assets: |
-            ["workflows/provider.yml",
-              "actions/artifact-attestation/action.yml",
-              "actions/oci-transformations/action.yml",
-              "actions/sbom-generation/action.yml",
-              "actions/publish-sboms-and-attestations/action.yml"]
+            ["actions/artifact-attestation/action.yml",
+              "actions/sbom-generation/action.yml"]
+
       - uses: ./.github/actions/install-nix
       - uses: ./.github/actions/build-nix
         with:
@@ -119,7 +111,6 @@ jobs:
           artifact-type: sbom
           subject-path: ./wash-${{ matrix.config.target }}/bin/wash
           subject-name: wash-${{ matrix.config.target }}
-          sbom-path: ./artifacts/wash-${{ matrix.config.target }}/bin/wash.spdx.json
           show-summary: true
 
   build-wasmcloud-bin:
@@ -142,11 +133,9 @@ jobs:
           target-repo: "wasmCloud/wasmCloud"
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-assets: |
-            ["workflows/provider.yml",
-              "actions/artifact-attestation/action.yml",
-              "actions/oci-transformations/action.yml",
-              "actions/sbom-generation/action.yml",
-              "actions/publish-sboms-and-attestations/action.yml"]
+            ["actions/artifact-attestation/action.yml",
+              "actions/sbom-generation/action.yml"]
+
       - uses: ./.github/actions/install-nix
       - uses: ./.github/actions/build-nix
         with:
@@ -180,7 +169,6 @@ jobs:
           artifact-type: sbom
           subject-path: ./wasmcloud-${{ matrix.config.target }}/bin/wasmcloud
           subject-name: wasmcloud-${{ matrix.config.target }}
-          sbom-path: ./artifacts/wasmcloud-${{ matrix.config.target }}/bin/wasmcloud.spdx.json
           show-summary: true
 
   build-provider-bin:
@@ -207,11 +195,9 @@ jobs:
           target-repo: "wasmCloud/wasmCloud"
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-assets: |
-            ["workflows/provider.yml",
-              "actions/artifact-attestation/action.yml",
-              "actions/oci-transformations/action.yml",
-              "actions/sbom-generation/action.yml",
-              "actions/publish-sboms-and-attestations/action.yml"]
+            ["actions/artifact-attestation/action.yml",
+              "actions/sbom-generation/action.yml"]
+
       - uses: ./.github/actions/install-nix
       - uses: ./.github/actions/build-nix
         with:
@@ -245,7 +231,6 @@ jobs:
           artifact-type: sbom
           subject-path: ./${{ matrix.name }}-provider-${{ matrix.target }}/bin/${{ matrix.name }}-provider
           subject-name: ${{ matrix.name }}-provider-${{ matrix.target }}
-          sbom-path: ./artifacts/${{ matrix.name }}-provider-${{ matrix.target }}/bin/${{ matrix.name }}-provider.spdx.json
           show-summary: true
 
   providers:
@@ -260,32 +245,12 @@ jobs:
     needs:
       - build-wash-bin
       - build-provider-bin
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
-      attestations: write
-    uses: ./.github/workflows/provider.yml
-    with:
-      name: ${{ matrix.name }}
-
-  oci:
     runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        include:
-          - bin: wasmcloud
-
-          - bin: wash
-            prefix: wash-cli-
     permissions:
       contents: read
       packages: write
       id-token: write
       attestations: write
-    needs:
-      - build-wash-bin
-      - build-wasmcloud-bin
     steps:
       - name: Prepare test environment
         uses: ossfellow/.github/actions/tugboat@main
@@ -294,117 +259,69 @@ jobs:
           target-repo: "wasmCloud/wasmCloud"
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-assets: |
-            ["workflows/provider.yml",
-              "actions/artifact-attestation/action.yml",
-              "actions/oci-transformations/action.yml",
-              "actions/sbom-generation/action.yml",
-              "actions/publish-sboms-and-attestations/action.yml"]
-      - uses: ./.github/actions/install-nix
-      - name: Extract tag context
-        id: ctx
-        run: |
-          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
-          echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+            ["workflows/provider.yml"]
 
-          version=${GITHUB_REF_NAME#${{ matrix.prefix }}v}
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
-          echo "version is ${version}"
-          if [[ $version == *"-"* ]]; then
-            echo "version ${version} is a pre-release"
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Login to GitHub Container Registry
-        if: startswith(github.ref, format('refs/tags/{0}v', matrix.prefix)) || github.ref == 'refs/heads/main'
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567
+      - name: Run Provider Workflow
+        uses: ./.github/workflows/provider.yml
         with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          name: ${{ matrix.name }}
 
-      - name: Install `skopeo`
-        run: nix profile install --inputs-from . 'nixpkgs#skopeo'
 
-      - name: Build `${{ matrix.bin }}` image
-        run: |
-          nix build -L .#${{ matrix.bin }}-oci-wolfi -o ./oci-wolfi
-
-      - name: Inspect current ${{ matrix.bin}} image configuration files (Image Manifest V 2, Schema 2 - aka. Docker Distribution format)
-        if: ${{ env.TEST_THIS_WORKFLOW }}
-        run: |
-          mkdir -p ${{ matrix.bin}}
-          skopeo copy --all oci-archive:./oci-wolfi dir:${{ matrix.bin}}
-
-          echo "=== Image Manifest List ==="
-          yq -P -oy ${matrix.bin}/manifest.json
-          echo
-
-          echo "=== Processing Individual Manifests ==="
-          for digest in $(yq -r '.manifests.[].digest' ${matrix.bin}/manifest.json); do
-            sha=${digest#sha256:}
-            echo
-            echo "=== Manifest for $digest ==="
-            yq -P -oy ${matrix.bin}/${sha}.manifest.json
-            echo
-
-            # Get config digest and show its contents
-            config_digest=$(yq -r '.config.digest' ${matrix.bin}/${sha}.manifest.json)
-            config_sha=${config_digest#sha256:}
-            echo
-            echo "=== Config for $config_digest ==="
-            yq -P -oy ${matrix.bin}/${config_sha}.config.json
-            echo
-          done
-
-      # - name: Convert to OCI directory format
-      #   run: |
-      #     mkdir -p ./oci-dir-wolfi
-
-      #     # Convert Wolfi image
-      #     skopeo copy --all oci-archive:./oci-wolfi oci:./wolfi
-
-      - name: Upload OCI directory to oci directory
-        uses: actions/upload-artifact@v4
-        if: ${{ env.TEST_THIS_WORKFLOW }}
-        with:
-          name: wolfi
-          path: ./oci-wolfi
-
-      - name: Push `${{ matrix.bin }}` version tag
-        if: ${{ env.RUN_OCI_ATTESTATION }} && startswith(github.ref, format('refs/tags/{0}v', matrix.prefix))
-        continue-on-error: ${{ github.repository_owner != 'wasmCloud' }}
-        uses: ./.github/actions/oci-transformations
-        with:
-          source-image: oci-archive:./oci-wolfi
-          source-tag: ${{ steps.ctx.outputs.version }}
-          image-title: ${{ matrix.bin }}
-          image-description: "${{ matrix.bin == 'wasmcloud' && 'wasmCloud runtime (Wolfi)' || 'wash CLI tool (Wolfi)' }}"
-          image-version: ${{ steps.ctx.outputs.version }}
-          target-registries: |
-            ${{ steps.ctx.outputs.owner }}
-            ghcr.io/${{ steps.ctx.outputs.owner }}
-            wasmcloud.azurecr.io/${{ steps.ctx.outputs.owner }}
-          image-variants: |
-            [
-              {
-                "name": "wolfi",
-                "tags": ["${{ steps.ctx.outputs.version }}-wolfi"]
-              }
-            ]
-          registry-credentials: |
-            [
-              {
-                "url": "ghcr.io",
-                "username": "${{ github.actor }}",
-                "password": "${{ secrets.GITHUB_TOKEN }}"
-              }
-            ]
-
-  release:
+  oci-wash:
     needs:
       - build-wash-bin
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Prepare test environment
+        uses: ossfellow/.github/actions/tugboat@main
+        if: ${{ env.TEST_THIS_WORKFLOW }}
+        with:
+          target-repo: "wasmCloud/wasmCloud"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-assets: |
+            ["workflows/oci.yml"]
+
+      - name: Run OCI Workflow
+        uses: ./.github/workflows/oci.yml
+        with:
+          bin: wash
+          prefix: wash-cli-
+
+  oci-wasmcloud:
+    needs:
       - build-wasmcloud-bin
-      - oci
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Prepare test environment
+        uses: ossfellow/.github/actions/tugboat@main
+        if: ${{ env.TEST_THIS_WORKFLOW }}
+        with:
+          target-repo: "wasmCloud/wasmCloud"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-assets: |
+            ["workflows/oci.yml"]
+
+      - name: Run OCI Workflow
+        uses: ./.github/workflows/oci.yml
+        with:
+          bin: wasmcloud
+          prefix: ''
+
+  release-wasmcloud:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - build-wasmcloud-bin
+      - oci-wasmcloud
     runs-on: ubuntu-22.04
     permissions:
       contents: write
@@ -417,30 +334,29 @@ jobs:
         with:
           target-repo: "wasmCloud/wasmCloud"
           github-assets: |
-            ["workflows/provider.yml",
-              "actions/artifact-attestation/action.yml",
-              "actions/oci-transformations/action.yml",
-              "actions/sbom-generation/action.yml",
-              "actions/publish-sboms-and-attestations/action.yml"]
-      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
+            ["actions/publish-sboms-and-attestations/action.yml"]
+      - name: Download release artifacts
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         with:
           path: artifacts
-
+          pattern: wasmcloud-*
       - run: |
           for dir in ./artifacts/wasmcloud-*; do
             target=${dir#./artifacts/wasmcloud-}
             for bin_path in $(find ${dir}/bin -type f); do
               chmod +x ${bin_path}
               bin=$(basename ${bin_path})
-            done
-          done
-
-      - run: |
-          for dir in ./artifacts/wash-*; do
-            target=${dir#./artifacts/wash-}
-            for bin_path in $(find ${dir}/bin -type f); do
-              chmod +x ${bin_path}
-              bin=$(basename ${bin_path})
+              case "$bin" in
+                *.exe)
+                  bin="${bin%.exe}"
+                  mkdir -p ./${bin}
+                  mv ${bin_path} ./${bin}/${bin}-${target}.exe
+                ;;
+                *)
+                  mkdir -p ./${bin}
+                  mv ${bin_path} ./${bin}/${bin}-${target%-fhs}
+                ;;
+              esac
             done
           done
 
@@ -449,6 +365,7 @@ jobs:
         uses: ./.github/actions/publish-sboms-and-attestations
         if: ${{ env.RUN_PUBLISH_SBOMS_AND_ATTESTATIONS }}
         with:
+          subject-name: wasmcloud
           release_version: ${{ env.WASMCLOUD_TEST_VERSION }}-docs
           registry: ghcr.io
           registry-credentials: |
@@ -469,6 +386,99 @@ jobs:
           body_path: release-notes.md
           files: ./wasmcloud/*
 
+      # Generate release notes with SBOM/attestation info
+      - name: Generate Release Notes
+        if: ${{ env.RUN_PUBLISH_SBOMS_AND_ATTESTATIONS }}
+        shell: bash
+        run: |
+          cat > release-notes.md << 'EOF'
+          ## Software Bill of Materials and Attestations
+
+          All SBOMs and attestations for this release are available as an OCI artifact at:
+          `ghcr.io/${{ github.repository }}/wasmcloud-provenance:${{ env.WASMCLOUD_TEST_VERSION }}`
+
+          You can inspect these documents using tools like `regctl`:
+          ```bash
+          # To list the artifacts in the OCI artifact
+          regctl artifact list ghcr.io/${{ github.repository }}/wasmcloud-provenance:${{ env.WASMCLOUD_TEST_VERSION }}
+
+          # To inspect the contents of an artifact
+          regctl artifact get ghcr.io/${{ github.repository }}/wasmcloud-provenance:${{ env.WASMCLOUD_TEST_VERSION }}
+          ```
+
+          ---
+          ## Release Notes
+          EOF
+
+          # Append GitHub's auto-generated release notes
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/releases/generate-notes \
+            -f tag_name="${GITHUB_REF#refs/tags/}" \
+            | jq -r '.body' >> release-notes.md
+
+  release-wash-cli:
+    if: startsWith(github.ref, 'refs/tags/wash-cli-v')
+    needs:
+      - build-wash-bin
+      - oci-wash
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Prepare test environment
+        uses: ossfellow/.github/actions/tugboat@main
+        if: ${{ env.TEST_THIS_WORKFLOW }}
+        with:
+          target-repo: "wasmCloud/wasmCloud"
+          github-assets: |
+            ["actions/publish-sboms-and-attestations/action.yml"]
+      - name: Download release artifacts
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
+        with:
+          path: artifacts
+          pattern: wash-*
+      - run: |
+          for dir in ./artifacts/wash-*; do
+            target=${dir#./artifacts/wash-}
+            for bin_path in $(find ${dir}/bin -type f); do
+              chmod +x ${bin_path}
+              bin=$(basename ${bin_path})
+              case "$bin" in
+                *.exe)
+                  bin="${bin%.exe}"
+                  mkdir -p ./${bin}
+                  mv ${bin_path} ./${bin}/${bin}-${target}.exe
+                ;;
+                *)
+                  mkdir -p ./${bin}
+                  mv ${bin_path} ./${bin}/${bin}-${target%-fhs}
+                ;;
+              esac
+            done
+          done
+
+      # Publish SBOMs and Attestation records
+      - name: Publish SBOMs and Attestation records
+        uses: ./.github/actions/publish-sboms-and-attestations
+        if: ${{ env.RUN_PUBLISH_SBOMS_AND_ATTESTATIONS }}
+        with:
+          subject-name: wash-cli
+          release_version: ${{ env.WASMCLOUD_TEST_VERSION }}-docs
+          registry: ghcr.io
+          registry-credentials: |
+            [
+              {
+                "url": "ghcr.io",
+                "username": "${{ github.actor }}",
+                "password": "${{ secrets.GITHUB_TOKEN }}"
+              }
+            ]
+
       # For wash-cli releases
       - name: Publish wash-cli release
         uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974
@@ -487,11 +497,15 @@ jobs:
           ## Software Bill of Materials and Attestations
 
           All SBOMs and attestations for this release are available as an OCI artifact at:
-          `ghcr.io/${{ github.repository }}/provenance:${{ env.WASMCLOUD_TEST_VERSION }}`
+          `ghcr.io/${{ github.repository }}/wash-cli-provenance:${{ env.WASH_TEST_VERSION }}`
 
           You can inspect these documents using tools like `regctl`:
           ```bash
-          regctl artifact get ghcr.io/${{ github.repository }}/provenance:${{ env.WASMCLOUD_TEST_VERSION }}
+          # To list the artifacts in the OCI artifact
+          regctl artifact list ghcr.io/${{ github.repository }}/wash-cli-provenance:${{ env.WASH_TEST_VERSION }}
+
+          # To inspect the contents of an artifact
+          regctl artifact get ghcr.io/${{ github.repository }}/wash-cli-provenance:${{ env.WASH_TEST_VERSION }}
           ```
 
           ---
@@ -506,9 +520,3 @@ jobs:
             /repos/${{ github.repository }}/releases/generate-notes \
             -f tag_name="${GITHUB_REF#refs/tags/}" \
             | jq -r '.body' >> release-notes.md
-
-      - name: Extract version
-        if: startsWith(github.ref, 'refs/tags/wash-cli-v')
-        run: |
-          VERSION=$(echo "${GITHUB_REF##*/}" | sed -e 's/wash-cli-v//')
-          echo "wash_version=$VERSION" >> $GITHUB_ENV

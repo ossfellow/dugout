@@ -1,6 +1,9 @@
 name: "Publish SBOMs and Attestations"
 description: "Create OCI artifact containing SBOMs and attestations with proper annotations"
 inputs:
+  subject-name:
+    description: "Name of the subject for the artifact"
+    required: true
   release-version:
     description: "Version tag for the artifact"
     required: true
@@ -19,28 +22,37 @@ inputs:
 runs:
   using: "composite"
   steps:
+    # Setup the directory all attestation and sbom artifacts are to be stored in,
+    # if it doesn't exist. This will facilitate structured access across all workflows and actions.
+    - name: Setup attestations-and-sboms directory
+      shell: bash
+      run: |
+        mkdir -p ${{ github.workspace }}/attestations-and-sboms
+        export PROVENANCE_ARTIFACTS_DIR=${{ github.workspace }}/attestations-and-sboms
+
     - name: Install regctl
       shell: bash
       run: |
         curl -L https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 -o /usr/local/bin/regctl
         chmod +x /usr/local/bin/regctl
 
-    - name: Download artifacts
+    - name: Download Attestation and SBOM artifacts
       uses: actions/download-artifact@v4
       with:
-        name: attestations-and-sboms
-        path: artifacts
+        pattern: '*.spdx.json,*-attestation.json,*-attestation-metadata.yaml'
+        path: ${{ PROVENANCE_ARTIFACTS_DIR }}
+        merge-multiple: true
 
-    - name: Create and populate OCI artifact
+    - name: Create provenance:${{ inputs.release-version }} OCI artifact image
       shell: bash
       run: |
         # Create empty OCI directory
         regctl image create ocidir://provenance:${{ inputs.release-version }}
 
         # Process each SBOM
-        find artifacts -name "*.spdx.json" -type f | while read sbom_file; do
+        find ${{ PROVENANCE_ARTIFACTS_DIR }} -name "*.spdx.json" -type f | while read sbom_file; do
           base_name=$(basename "$sbom_file" .spdx.json)
-          metadata_file="artifacts/${base_name}-attestation-metadata.yaml"
+          metadata_file="${PROVENANCE_ARTIFACTS_DIR}/${base_name}-attestation-metadata.yaml"
 
           # Extract metadata if available
           if [ -f "$metadata_file" ]; then
@@ -68,9 +80,9 @@ runs:
         done
 
         # Process each attestation
-        find artifacts -name "*-attestation.json" -type f | while read attestation_file; do
+        find ${{ PROVENANCE_ARTIFACTS_DIR }} -name "*-attestation.json" -type f | while read attestation_file; do
           base_name=$(basename "$attestation_file" -attestation.json)
-          metadata_file="artifacts/${base_name}-attestation-metadata.yaml"
+          metadata_file="${PROVENANCE_ARTIFACTS_DIR}/${base_name}-attestation-metadata.yaml"
 
           # Extract metadata
           if [ -f "$metadata_file" ]; then
@@ -79,7 +91,10 @@ runs:
             subject_digest=$(yq -r '.subject_digest' "$metadata_file")
             attestation_id=$(yq -r '.attestation_id' "$metadata_file")
           else
-            continue
+            artifact_type="unknown"
+            subject_name="${base_name}"
+            subject_digest=""
+            attestation_id="unknown"
           fi
 
           # Add attestation as artifact with annotations
@@ -130,6 +145,6 @@ runs:
         # Push the artifact
         regctl image copy \
           ocidir://provenance:${{ inputs.release-version }} \
-          ${{ inputs.registry }}/${{ github.repository }}/provenance:${{ inputs.release-version }} \
+          ${{ inputs.registry }}/${{ github.repository }}/${{ inputs.subject-name }}-provenance:${{ inputs.release-version }} \
           --digest-tags \
           --referrers
