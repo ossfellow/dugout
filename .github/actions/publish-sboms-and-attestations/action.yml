@@ -40,7 +40,7 @@ runs:
       uses: actions/download-artifact@v4
       with:
         pattern: '*.spdx.json,*-attestation.json,*-attestation-metadata.yaml'
-        path: ${{ PROVENANCE_ARTIFACTS_DIR }}
+        path: ${PROVENANCE_ARTIFACTS_DIR}
         merge-multiple: true
 
     - name: Create provenance:${{ inputs.release-version }} OCI artifact image
@@ -50,7 +50,7 @@ runs:
         regctl image create ocidir://provenance:${{ inputs.release-version }}
 
         # Process each SBOM
-        find ${{ PROVENANCE_ARTIFACTS_DIR }} -name "*.spdx.json" -type f | while read sbom_file; do
+        find ${PROVENANCE_ARTIFACTS_DIR} -name "*.spdx.json" -type f | while read sbom_file; do
           base_name=$(basename "$sbom_file" .spdx.json)
           metadata_file="${PROVENANCE_ARTIFACTS_DIR}/${base_name}-attestation-metadata.yaml"
 
@@ -80,7 +80,7 @@ runs:
         done
 
         # Process each attestation
-        find ${{ PROVENANCE_ARTIFACTS_DIR }} -name "*-attestation.json" -type f | while read attestation_file; do
+        find ${PROVENANCE_ARTIFACTS_DIR} -name "*-attestation.json" -type f | while read attestation_file; do
           base_name=$(basename "$attestation_file" -attestation.json)
           metadata_file="${PROVENANCE_ARTIFACTS_DIR}/${base_name}-attestation-metadata.yaml"
 
