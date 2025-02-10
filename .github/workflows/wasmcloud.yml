@@ -403,7 +403,7 @@ jobs:
           regctl artifact list ghcr.io/${{ github.repository }}/wasmcloud-provenance:${{ env.WASMCLOUD_TEST_VERSION }}
 
           # To inspect the contents of an artifact
-          regctl artifact get ghcr.io/${{ github.repository }}/wasmcloud-provenance:${{ env.WASMCLOUD_TEST_VERSION }}
+          regctl artifact get ghcr.io/${{ github.repository }}/wasmcloud-provenance:${{ env.WASMCLOUD_TEST_VERSION }} [artifact-manifest-digest-from-previous-command]
           ```
 
           ---
@@ -505,7 +505,7 @@ jobs:
           regctl artifact list ghcr.io/${{ github.repository }}/wash-cli-provenance:${{ env.WASH_TEST_VERSION }}
 
           # To inspect the contents of an artifact
-          regctl artifact get ghcr.io/${{ github.repository }}/wash-cli-provenance:${{ env.WASH_TEST_VERSION }}
+          regctl artifact get ghcr.io/${{ github.repository }}/wash-cli-provenance:${{ env.WASH_TEST_VERSION }} [artifact-manifest-digest-from-previous-command]
           ```
 
           ---

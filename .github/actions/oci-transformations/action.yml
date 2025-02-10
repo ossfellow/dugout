@@ -90,7 +90,7 @@ runs:
           --digest-tags \
           --referrers
 
-    # Enrich metadata
+    # Enrich image metadata
     - name: Enrich ${{ inputs.source-image }}:${{ inputs.source-tag }} image metadata
       shell: bash
       run: |

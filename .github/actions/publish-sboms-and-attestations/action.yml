@@ -28,7 +28,7 @@ runs:
       shell: bash
       run: |
         mkdir -p ${{ github.workspace }}/attestations-and-sboms
-        export PROVENANCE_ARTIFACTS_DIR=${{ github.workspace }}/attestations-and-sboms
+        echo "PROVENANCE_ARTIFACTS_DIR=${{ github.workspace }}/attestations-and-sboms" >> $GITHUB_ENV
 
     - name: Install regctl
       shell: bash
@@ -40,19 +40,19 @@ runs:
       uses: actions/download-artifact@v4
       with:
         pattern: '*.spdx.json,*-attestation.json,*-attestation-metadata.yaml'
-        path: ${PROVENANCE_ARTIFACTS_DIR}
+        path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}
         merge-multiple: true
 
     - name: Create provenance:${{ inputs.release-version }} OCI artifact image
       shell: bash
       run: |
         # Create empty OCI directory
-        regctl image create ocidir://provenance:${{ inputs.release-version }}
+        regctl image create ocidir://${{ inputs.subject-name }}-provenance:${{ inputs.release-version }}
 
         # Process each SBOM
-        find ${PROVENANCE_ARTIFACTS_DIR} -name "*.spdx.json" -type f | while read sbom_file; do
+        find ${{ env.PROVENANCE_ARTIFACTS_DIR }} -name "*.spdx.json" -type f | while read sbom_file; do
           base_name=$(basename "$sbom_file" .spdx.json)
-          metadata_file="${PROVENANCE_ARTIFACTS_DIR}/${base_name}-attestation-metadata.yaml"
+          metadata_file="${{ env.PROVENANCE_ARTIFACTS_DIR }}/${base_name}-attestation-metadata.yaml"
 
           # Extract metadata if available
           if [ -f "$metadata_file" ]; then
@@ -72,7 +72,7 @@ runs:
             --file-title \
             --file-media-type="application/spdx+json" \
             --file "$sbom_file" \
-            --subject: ocidir://provenance:${{ inputs.release-version }} \
+            --subject: ocidir://${{ inputs.subject-name }}-provenance:${{ inputs.release-version }} \
             --annotation "org.opencontainers.artifact.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
             --annotation "org.opencontainers.artifact.description=SPDX SBOM for ${subject_name}" \
             --annotation "org.opencontainers.artifact.type=org.spdx.sbom" \
@@ -80,9 +80,9 @@ runs:
         done
 
         # Process each attestation
-        find ${PROVENANCE_ARTIFACTS_DIR} -name "*-attestation.json" -type f | while read attestation_file; do
+        find ${{ env.PROVENANCE_ARTIFACTS_DIR }} -name "*-attestation.json" -type f | while read attestation_file; do
           base_name=$(basename "$attestation_file" -attestation.json)
-          metadata_file="${PROVENANCE_ARTIFACTS_DIR}/${base_name}-attestation-metadata.yaml"
+          metadata_file="${{ env.PROVENANCE_ARTIFACTS_DIR }}/${base_name}-attestation-metadata.yaml"
 
           # Extract metadata
           if [ -f "$metadata_file" ]; then
@@ -106,7 +106,7 @@ runs:
             --file-title \
             --file-media-type="application/json" \
             --file "$attestation_file" \
-            --subject: ocidir://provenance:${{ inputs.release-version }} \
+            --subject: ocidir://${{ inputs.subject-name }}-provenance:${{ inputs.release-version }} \
             --annotation "org.opencontainers.artifact.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
             --annotation "org.opencontainers.artifact.description=${artifact_type} attestation for ${subject_name}" \
             --annotation "org.opencontainers.artifact.type=org.sigstore.attestation" \
@@ -119,7 +119,7 @@ runs:
       if: inputs.show-metadata == 'true'
       shell: bash
       run: |
-        IMAGE_PATH="ocidir://provenance:${{ inputs.release-version }}"
+        IMAGE_PATH="ocidir://${{ inputs.subject-name }}-provenance:${{ inputs.release-version }}"
 
         echo "=== OCI Artifact Index ==="
         regctl artifact list ${IMAGE_PATH} -v error | yq -P
@@ -144,7 +144,7 @@ runs:
 
         # Push the artifact
         regctl image copy \
-          ocidir://provenance:${{ inputs.release-version }} \
+          ocidir://${{ inputs.subject-name }}-provenance:${{ inputs.release-version }} \
           ${{ inputs.registry }}/${{ github.repository }}/${{ inputs.subject-name }}-provenance:${{ inputs.release-version }} \
           --digest-tags \
           --referrers
