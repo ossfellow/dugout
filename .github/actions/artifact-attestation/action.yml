@@ -96,7 +96,7 @@ runs:
         echo "subject_path: ${{ inputs.subject-path }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "subject_digest: ${{ inputs.subject-digest }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "subject_checksums: ${{ inputs.subject-checksums }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
-        echo "sbom_path: ${{ sbom_path }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "sbom_path: ${sbom_path}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "push_to_registry: ${{ inputs.push-to-registry }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "show_summary: ${{ inputs.show-summary }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
 
