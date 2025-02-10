@@ -41,6 +41,7 @@ runs:
         mkdir -p ${{ github.workspace }}/attestations-and-sboms
         echo "PROVENANCE_ARTIFACTS_DIR=${{ github.workspace }}/attestations-and-sboms" >> $GITHUB_ENV
         echo "LOCAL_SBOM_FILE_EXISTS=$([ -f ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}.spdx.json ] >/dev/null && echo 'true' || echo 'false')" >> $GITHUB_ENV
+        echo "ARTIFACT_TYPE=${{ inputs.artifact-type }}" >> $GITHUB_ENV
 
     - name: Attest ${{ inputs.subject-name }} ${{ inputs.artifact-type }}
       id: attestation
