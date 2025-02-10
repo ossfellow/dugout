@@ -26,7 +26,7 @@ runs:
       shell: bash
       run: |
         mkdir -p ${{ github.workspace }}/attestations-and-sboms
-        export PROVENANCE_ARTIFACTS_DIR=${{ github.workspace }}/attestations-and-sboms
+        echo "PROVENANCE_ARTIFACTS_DIR=${{ github.workspace }}/attestations-and-sboms" >> $GITHUB_ENV
 
     # Setup syft config from attest.yml
     - name: Setup Syft configuration
@@ -72,12 +72,12 @@ runs:
             --cargo-package ${{ inputs.package-name }} \
             --output-format spdx_json_2_3 \
             --project-directory ${{ github.workspace }}/${{ inputs.artifact-path }} \
-            > "${{ PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json"
+            > "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json"
         else
           cargo sbom \
             --output-format spdx_json_2_3 \
             --project-directory ${{ github.workspace }}/${{ inputs.artifact-path }} \
-            > "${{ PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json"
+            > "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json"
         fi
 
     # For Go projects
@@ -94,7 +94,7 @@ runs:
           --namespace "https://wasmcloud.com" \
           --name "${{ inputs.artifact-name }}" \
           --path "${{ github.workspace }}/${{ inputs.artifact-path }}" \
-          --format json > "${{ PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json"
+          --format json > "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json"
 
     # For other artifacts using Anchore's action
     - name: Generate ${{ inputs.artifact-name }} SBOM using Syft
@@ -105,7 +105,7 @@ runs:
         artifact-name: ${{ inputs.artifact-name }}.sbom
         format: spdx-json
         config: .syft.yaml
-        output-file: ${{ PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json
+        output-file: ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json
 
     # Upload the SBOM to common artifact storage
     - name: Upload ${{ inputs.artifact-name }} SBOM
@@ -113,6 +113,6 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.artifact-name }}.spdx.json
-        path: ${{ PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json
+        path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json
         if-no-files-found: warn
         overwrite: true
