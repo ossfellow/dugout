@@ -218,7 +218,8 @@ jobs:
         uses: ./.github/actions/sbom-generation
         if: ${{ env.RUN_PROVIDER_ATTESTATION }}
         with:
-          artifact-path: ./${{ matrix.name }}-provider-${{ matrix.target }}/bin/${{ matrix.name }}-provider
+          subject-path: ./${{ matrix.name }}-provider-${{ matrix.target }}/bin/${{ matrix.name }}-provider
+          source-path: ./crates/provider-${{ matrix.name }}  # Point to provider source
           artifact-name: ${{ matrix.name }}-provider-${{ matrix.target }}
           language: rust
           package-name: ${{ matrix.name }}-provider
