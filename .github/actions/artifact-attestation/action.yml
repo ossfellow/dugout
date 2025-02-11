@@ -40,7 +40,7 @@ runs:
       run: |
         mkdir -p ${{ github.workspace }}/attestations-and-sboms
         echo "PROVENANCE_ARTIFACTS_DIR=${{ github.workspace }}/attestations-and-sboms" >> $GITHUB_ENV
-        echo "ARTIFACT_TYPE=${{ inputs.artifact-type }}" >> $GITHUB_ENV
+        echo "IS_SBOM_FILE_LOCAL=$([ -f ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}.spdx.json ] && echo 'true' || echo 'false')" >> $GITHUB_ENV
 
     - name: Attest ${{ inputs.subject-name }} ${{ inputs.artifact-type }}
       id: attestation
@@ -55,11 +55,12 @@ runs:
         show-summary: ${{ inputs.show-summary }}
         github-token: ${{ inputs.github-token }}
 
-    - name: Get ${{ inputs.subject-name }} SBOM
-      if: ${{ hashFiles(format('{0}/{1}.spdx.json', 'env.PROVENANCE_ARTIFACTS_DIR', 'inputs.subject-name')) == '' }}
+    - name: Check if ${{ inputs.subject-name }} SBOM exists
+      if: ${{ ! env.IS_SBOM_FILE_LOCAL }}
+      # if: ${{ hashFiles(format('{0}/{1}.spdx.json', 'env.PROVENANCE_ARTIFACTS_DIR', 'inputs.subject-name')) == '' }}
       shell: bash
       run: |
-        echo "Generating ${{ inputs.subject-name }} SBOM"
+        echo "Downloading ${{ inputs.subject-name }} SBOM"
 
     - name: Get ${{ inputs.subject-name }} SBOM
       if: ${{ inputs.artifact-type == 'sbom' }}
