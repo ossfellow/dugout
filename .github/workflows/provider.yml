@@ -32,10 +32,7 @@ jobs:
           target-repo: "wasmCloud/wasmCloud"
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-assets: |
-            ["actions/artifact-attestation/action.yml",
-              "actions/oci-transformations/action.yml",
-              "actions/sbom-generation/action.yml",
-              "actions/publish-sboms-and-attestations/action.yml"]
+            ["actions/artifact-attestation/action.yml"]
       - name: Extract tag context
         id: ctx
         run: |
@@ -141,11 +138,6 @@ jobs:
         with:
           target-repo: "wasmCloud/wasmCloud"
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          github-assets: |
-            ["actions/artifact-attestation/action.yml",
-              "actions/oci-transformations/action.yml",
-              "actions/sbom-generation/action.yml",
-              "actions/publish-sboms-and-attestations/action.yml"]
 
       # Set up wash
       - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16

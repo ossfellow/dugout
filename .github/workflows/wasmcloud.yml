@@ -98,10 +98,11 @@ jobs:
         uses: ./.github/actions/sbom-generation
         if: ${{ env.RUN_BINARY_ATTESTATION }}
         with:
-          artifact-path: ./wash-${{ matrix.config.target }}/bin/wash
           artifact-name: wash-${{ matrix.config.target }}
+          subject-path: ${{ github.workspace }}/wasmcloud
+          subject-name: wash
+          subject-version: ${{ env.WASH_TEST_VERSION }}
           language: rust
-          package-name: wash
 
       # Attest SBOMs
       - name: Attest SBOMs for Wash
@@ -156,10 +157,11 @@ jobs:
         uses: ./.github/actions/sbom-generation
         if: ${{ env.RUN_BINARY_ATTESTATION }}
         with:
-          artifact-path: ./wasmcloud-${{ matrix.config.target }}/bin/wasmcloud
           artifact-name: wasmcloud-${{ matrix.config.target }}
+          subject-path: ${{ github.workspace }}/wasmcloud
+          subject-name: wasmcloud
+          subject-version: ${{ env.WASMCLOUD_TEST_VERSION }}
           language: rust
-          package-name: wasmcloud
 
       # Attest SBOMs
       - name: Attest SBOMs for WasmCloud
@@ -218,11 +220,11 @@ jobs:
         uses: ./.github/actions/sbom-generation
         if: ${{ env.RUN_PROVIDER_ATTESTATION }}
         with:
-          subject-path: ./${{ matrix.name }}-provider-${{ matrix.target }}/bin/${{ matrix.name }}-provider
-          source-path: ./crates/provider-${{ matrix.name }}  # Point to provider source
           artifact-name: ${{ matrix.name }}-provider-${{ matrix.target }}
+          subject-path: ${{ github.workspace }}/wasmcloud
+          subject-name: ${{ matrix.name }}-provider
+          subject-version: ${{ env.WASMCLOUD_TEST_VERSION }}
           language: rust
-          package-name: ${{ matrix.name }}-provider
 
       # Attest SBOMs
       - name: Attest SBOMs for Provider
