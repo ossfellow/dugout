@@ -99,7 +99,7 @@ jobs:
         if: ${{ env.RUN_BINARY_ATTESTATION }}
         with:
           artifact-name: wash-${{ matrix.config.target }}
-          subject-path: ${{ github.workspace }}/wasmcloud
+          subject-path: ${{ github.workspace }}
           subject-name: wash
           subject-version: ${{ env.WASH_TEST_VERSION }}
           language: rust
@@ -158,7 +158,7 @@ jobs:
         if: ${{ env.RUN_BINARY_ATTESTATION }}
         with:
           artifact-name: wasmcloud-${{ matrix.config.target }}
-          subject-path: ${{ github.workspace }}/wasmcloud
+          subject-path: ${{ github.workspace }}
           subject-name: wasmcloud
           subject-version: ${{ env.WASMCLOUD_TEST_VERSION }}
           language: rust
@@ -221,7 +221,7 @@ jobs:
         if: ${{ env.RUN_PROVIDER_ATTESTATION }}
         with:
           artifact-name: ${{ matrix.name }}-provider-${{ matrix.target }}
-          subject-path: ${{ github.workspace }}/wasmcloud
+          subject-path: ${{ github.workspace }}
           subject-name: ${{ matrix.name }}-provider
           subject-version: ${{ env.WASMCLOUD_TEST_VERSION }}
           language: rust
