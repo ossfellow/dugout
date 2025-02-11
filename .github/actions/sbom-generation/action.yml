@@ -71,12 +71,12 @@ runs:
           cargo sbom \
             --cargo-package ${{ inputs.subject-name }} \
             --output-format spdx_json_2_3 \
-            --project-directory ${{ github.workspace }}/${{ inputs.subject-path }} \
+            --project-directory ${{ inputs.subject-path }} \
             > "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json"
         else
           cargo sbom \
             --output-format spdx_json_2_3 \
-            --project-directory ${{ github.workspace }}/${{ inputs.subject-path }} \
+            --project-directory ${{ inputs.subject-path }} \
             > "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json"
         fi
 
@@ -93,7 +93,7 @@ runs:
         bom generate \
           --namespace "https://wasmcloud.com" \
           --name "${{ inputs.artifact-name }}" \
-          --dirs "${{ github.workspace }}/${{ inputs.subject-path }}" \
+          --dirs "${{ inputs.subject-path }}" \
           --format json
           --output "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json"
 
@@ -102,7 +102,7 @@ runs:
       if: inputs.language != 'rust' && inputs.language != 'go'
       uses: anchore/sbom-action@v0
       with:
-        path: ${{ github.workspace }}/${{ inputs.subject-path }}
+        path: ${{ inputs.subject-path }}
         artifact-name: ${{ inputs.artifact-name }}.sbom
         format: spdx-json
         config: .syft.yaml
