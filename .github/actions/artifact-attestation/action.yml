@@ -40,7 +40,8 @@ runs:
       run: |
         mkdir -p ${{ github.workspace }}/attestations-and-sboms
         echo "PROVENANCE_ARTIFACTS_DIR=${{ github.workspace }}/attestations-and-sboms" >> $GITHUB_ENV
-        echo "IS_SBOM_FILE_LOCAL=$([ -f ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}.spdx.json ] && echo 'true' || echo 'false')" >> $GITHUB_ENV
+        echo "LOCAL_SBOM_FILE=${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}.spdx.json" >> $GITHUB_ENV
+        echo "IS_SBOM_FILE_LOCAL=$([ -f ${{ env.LOCAL_SBOM_FILE }} ] && echo 'true' || echo 'false')" >> $GITHUB_ENV
 
     - name: Attest ${{ inputs.subject-name }} ${{ inputs.artifact-type }}
       id: attestation
@@ -55,24 +56,22 @@ runs:
         show-summary: ${{ inputs.show-summary }}
         github-token: ${{ inputs.github-token }}
 
-    - name: Check if ${{ inputs.subject-name }} SBOM exists
-      if: ${{ ! env.IS_SBOM_FILE_LOCAL }}
-      # if: ${{ hashFiles(format('{0}/{1}.spdx.json', 'env.PROVENANCE_ARTIFACTS_DIR', 'inputs.subject-name')) == '' }}
-      shell: bash
-      run: |
-        echo "Downloading ${{ inputs.subject-name }} SBOM"
-
     - name: Get ${{ inputs.subject-name }} SBOM
-      if: ${{ inputs.artifact-type == 'sbom' }}
+      if: ${{ inputs.artifact-type == 'sbom' }} && ${{ ! env.IS_SBOM_FILE_LOCAL }}
       uses: actions/download-artifact@v4
       with:
         name: ${{ inputs.subject-name }}.spdx.json
         path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}.spdx.json
         merge-multiple: true
 
+    - name: Check if ${{ inputs.subject-name }} SBOM exists locally
+      if: ${{ inputs.artifact-type == 'sbom' }}
+      shell: bash
+      run: |
+        echo "IS_SBOM_FILE_LOCAL=$([ -f ${{ env.LOCAL_SBOM_FILE }} ] && echo 'true' || echo 'false')" >> $GITHUB_ENV
 
     - name: Attest ${{ inputs.subject-name }} SBOM
-      if: ${{ hashFiles(format('{0}/{1}.spdx.json', env.PROVENANCE_ARTIFACTS_DIR, inputs.subject-name)) == '' }}
+      if: ${{ inputs.artifact-type == 'sbom' }} && ${{ env.IS_SBOM_FILE_LOCAL }}
       uses: actions/attest-sbom@v2
       with:
         subject-path: ${{ (inputs.subject-digest || inputs.subject-checksums) && '' || inputs.subject-path }}
@@ -88,8 +87,8 @@ runs:
       shell: bash
       run: |
         # Determine if SBOM was generated
-        if [ -f ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}.spdx.json ]; then
-          sbom_path="${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}.spdx.json"
+        if ${{ env.IS_SBOM_FILE_LOCAL }}; then
+          sbom_path="${{ env.LOCAL_SBOM_FILE }}"
         else
           sbom_path=""
         fi
