@@ -58,7 +58,7 @@ runs:
         github-token: ${{ inputs.github-token }}
 
     - name: Get ${{ inputs.subject-name }} SBOM
-      if: inputs.artifact-type == 'sbom' && ${{ !env.IS_SBOM_FILE_LOCAL }}
+      if: (inputs.artifact-type == 'sbom') && (${{ !env.IS_SBOM_FILE_LOCAL }})
       uses: actions/download-artifact@v4
       with:
         name: ${{ inputs.subject-name }}.spdx.json
