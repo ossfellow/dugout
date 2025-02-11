@@ -41,7 +41,6 @@ runs:
         mkdir -p ${{ github.workspace }}/attestations-and-sboms
         echo "PROVENANCE_ARTIFACTS_DIR=${{ github.workspace }}/attestations-and-sboms" >> $GITHUB_ENV
         echo "LOCAL_SBOM_FILE=${{ github.workspace }}/attestations-and-sboms/${{ inputs.subject-name }}.spdx.json" >> $GITHUB_ENV
-        echo "IS_SBOM_FILE_LOCAL=$([ -f ${{ github.workspace }}/attestations-and-sboms/${{ inputs.subject-name }}.spdx.json ] && echo 'true' || echo 'false')" >> $GITHUB_ENV
         echo "ARTIFACT_TYPE=${{ inputs.artifact-type }}" >> $GITHUB_ENV
 
     - name: Attest ${{ inputs.subject-name }} ${{ inputs.artifact-type }}
@@ -58,21 +57,16 @@ runs:
         github-token: ${{ inputs.github-token }}
 
     - name: Get ${{ inputs.subject-name }} SBOM
-      if: (inputs.artifact-type == 'sbom') && (${{ !env.IS_SBOM_FILE_LOCAL }})
+      if: inputs.artifact-type == 'sbom'
       uses: actions/download-artifact@v4
       with:
         name: ${{ inputs.subject-name }}.spdx.json
         path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}.spdx.json
+        if-no-files-found: ignore
         merge-multiple: true
 
-    - name: Check if ${{ inputs.subject-name }} SBOM exists locally
-      if: ${{ inputs.artifact-type == 'sbom' }}
-      shell: bash
-      run: |
-        echo "IS_SBOM_FILE_LOCAL=$([ -f ${{ env.LOCAL_SBOM_FILE }} ] && echo 'true' || echo 'false')" >> $GITHUB_ENV
-
     - name: Attest ${{ inputs.subject-name }} SBOM
-      if: inputs.artifact-type == 'sbom' && env.IS_SBOM_FILE_LOCAL
+      if: inputs.artifact-type == 'sbom'
       uses: actions/attest-sbom@v2
       with:
         subject-path: ${{ (inputs.subject-digest || inputs.subject-checksums) && '' || inputs.subject-path }}
