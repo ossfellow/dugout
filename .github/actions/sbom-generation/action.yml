@@ -67,6 +67,8 @@ runs:
       if: inputs.language == 'rust'
       shell: bash
       run: |
+        ls -lh ${{ github.workspace }}/
+        ls -lh ./
         if [ -n "${{ inputs.subject-name }}" ]; then
           cargo sbom \
             --cargo-package ${{ inputs.subject-name }} \
