@@ -81,13 +81,6 @@ runs:
     - name: Capture attestation metadata
       shell: bash
       run: |
-        # Determine if SBOM was generated
-        if ${{ env.IS_SBOM_FILE_LOCAL }}; then
-          sbom_path="${{ env.LOCAL_SBOM_FILE }}"
-        else
-          sbom_path=""
-        fi
-
         # Preserve attestation metadata file
         echo "# Build attestation metadata for: ${{ inputs.subject-name }}" > "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "attestation_id: ${{ steps.attestation.outputs.attestation-id }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
@@ -97,7 +90,7 @@ runs:
         echo "subject_path: ${{ inputs.subject-path }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "subject_digest: ${{ inputs.subject-digest }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "subject_checksums: ${{ inputs.subject-checksums }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
-        echo "sbom_path: ${sbom_path}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "sbom_path: $([ -f ${{ env.LOCAL_SBOM_FILE }} ] && echo ${{ env.LOCAL_SBOM_FILE }} || echo '')" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "push_to_registry: ${{ inputs.push-to-registry }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
         echo "show_summary: ${{ inputs.show-summary }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
 
