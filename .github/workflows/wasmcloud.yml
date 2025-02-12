@@ -248,87 +248,41 @@ jobs:
     needs:
       - build-wash-bin
       - build-provider-bin
-    runs-on: ubuntu-22.04
     permissions:
       contents: read
       packages: write
       id-token: write
       attestations: write
-    steps:
-      - name: Prepare test environment
-        uses: ossfellow/.github/actions/tugboat@main
-        if: ${{ env.TEST_THIS_WORKFLOW }}
-        with:
-          target-repo: "wasmCloud/wasmCloud"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          github-assets: |
-            ["workflows/provider.yml"]
-
-      - name: Validate required workflows exist
-        if: ${{ env.TEST_THIS_WORKFLOW }}
-        run: |
-          ls -lh ./.github/workflows
-
-      - name: Run Provider Workflow
-        uses: ./.github/workflows/provider.yml
-        with:
-          name: ${{ matrix.name }}
+    uses: ./.github/workflows/provider.yml
+    with:
+      name: ${{ matrix.name }}
 
 
   oci-wash:
     needs:
       - build-wash-bin
-    runs-on: ubuntu-22.04
     permissions:
       contents: read
       packages: write
       id-token: write
       attestations: write
-    steps:
-      - name: Prepare test environment
-        uses: ossfellow/.github/actions/tugboat@main
-        if: ${{ env.TEST_THIS_WORKFLOW }}
-        with:
-          target-repo: "wasmCloud/wasmCloud"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          github-assets: |
-            ["workflows/oci.yml"]
-
-            - name: Validate required workflows exist
-            if: ${{ env.TEST_THIS_WORKFLOW }}
-            run: |
-              ls -lh ./.github/workflows
-
-      - name: Run OCI Workflow
-        uses: ./.github/workflows/oci.yml
-        with:
-          bin: wash
-          prefix: wash-cli-
+    uses: ./.github/workflows/oci.yml
+    with:
+      bin: wash
+      prefix: wash-cli-
 
   oci-wasmcloud:
     needs:
       - build-wasmcloud-bin
-    runs-on: ubuntu-22.04
     permissions:
       contents: read
       packages: write
       id-token: write
       attestations: write
-    steps:
-      - name: Prepare test environment
-        uses: ossfellow/.github/actions/tugboat@main
-        if: ${{ env.TEST_THIS_WORKFLOW }}
-        with:
-          target-repo: "wasmCloud/wasmCloud"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          github-assets: |
-            ["workflows/oci.yml"]
-
-      - name: Run OCI Workflow
-        uses: ./.github/workflows/oci.yml
-        with:
-          bin: wasmcloud
-          prefix: ''
+    uses: ./.github/workflows/oci.yml
+    with:
+      bin: wasmcloud
+      prefix: ''
 
   release-wasmcloud:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -348,6 +302,7 @@ jobs:
           target-repo: "wasmCloud/wasmCloud"
           github-assets: |
             ["actions/publish-sboms-and-attestations/action.yml"]
+
       - name: Download release artifacts
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         with:
