@@ -19,7 +19,7 @@ env:
   TEST_THIS_WORKFLOW: true # Whether to test this workflow
   WASMCLOUD_TEST_VERSION: "v1.51.1" # wasmCloud version to test
   WASH_TEST_VERSION: "wash-cli-v0.38.0" # wash-cli version to test
-  RUN_BINARY_ATTESTATION: true # Whether to run the binary attestation workflow
+  RUN_BINARY_ATTESTATION: false # Whether to run the binary attestation workflow
   RUN_PROVIDER_ATTESTATION: true # Whether to run the provider attestation workflow
   RUN_OCI_ATTESTATION: true # Whether to run the OCI attestation workflow
   RUN_PUBLISH_SBOMS_AND_ATTESTATIONS: true # Whether to run the publish SBOMS and attestations workflow
@@ -264,6 +264,11 @@ jobs:
           github-assets: |
             ["workflows/provider.yml"]
 
+      - name: Validate required workflows exist
+        if: ${{ env.TEST_THIS_WORKFLOW }}
+        run: |
+          ls -lh ./.github/workflows
+
       - name: Run Provider Workflow
         uses: ./.github/workflows/provider.yml
         with:
@@ -288,6 +293,11 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-assets: |
             ["workflows/oci.yml"]
+
+            - name: Validate required workflows exist
+            if: ${{ env.TEST_THIS_WORKFLOW }}
+            run: |
+              ls -lh ./.github/workflows
 
       - name: Run OCI Workflow
         uses: ./.github/workflows/oci.yml
