@@ -112,6 +112,7 @@ jobs:
         with:
           name: wolfi
           path: ./oci-wolfi
+          overwrite: true
 
       - name: Push `${{ inputs.bin }}` version tag
         if: ${{ env.RUN_OCI_ATTESTATION }} && startswith(github.ref, format('refs/tags/{0}v', matrix.prefix))

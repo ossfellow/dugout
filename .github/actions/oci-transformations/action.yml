@@ -64,10 +64,10 @@ runs:
           # Import archive using regctl
           regctl image import \
             ocidir://workspace:${{ inputs.source-tag }} \
-            "${inputs.source-image#oci-archive:}"
+            "${{ inputs.source-image#oci-archive: }}"
         elif [[ "${{ inputs.source-image }}" == ocidir://* ]]; then
           # Just copy the directory contents
-          cp -r "${inputs.source-image#ocidir://}"/* workspace/
+          cp -r "${{ inputs.source-image#ocidir:// }}"/* workspace/
         fi
 
     # Download from registry if not an OCI directory or archive
