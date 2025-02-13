@@ -142,10 +142,10 @@ jobs:
       # Set up wash
       - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         with:
-          path: artifacts
-      - run: mv "./artifacts/wasmcloud-aarch64-apple-darwin/bin/wash" wash
-      - run: chmod +x wash
+          name: wash-x86_64-unknown-linux-musl
+          path: artifact
+      - run: chmod +x ./artifact/bin/wash
 
       - name: build provider
         run: |
-          ./wash build -p ${{ matrix.provider.bin-path }}
+          ./artifact/bin/wash build -p ${{ matrix.provider.bin-path }}

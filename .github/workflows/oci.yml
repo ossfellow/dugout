@@ -36,6 +36,7 @@ jobs:
         if: ${{ env.TEST_THIS_WORKFLOW }}
         with:
           target-repo: "wasmCloud/wasmCloud"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           github-assets: |
             ["actions/oci-transformations/action.yml"]
 

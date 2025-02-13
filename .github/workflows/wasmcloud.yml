@@ -302,6 +302,7 @@ jobs:
         if: ${{ env.TEST_THIS_WORKFLOW }}
         with:
           target-repo: "wasmCloud/wasmCloud"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           github-assets: |
             ["actions/publish-sboms-and-attestations/action.yml"]
 
@@ -405,6 +406,7 @@ jobs:
         if: ${{ env.TEST_THIS_WORKFLOW }}
         with:
           target-repo: "wasmCloud/wasmCloud"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           github-assets: |
             ["actions/publish-sboms-and-attestations/action.yml"]
       - name: Download release artifacts
