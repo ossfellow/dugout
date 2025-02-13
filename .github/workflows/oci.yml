@@ -95,7 +95,7 @@ jobs:
             config_sha=${config_digest#sha256:}
             echo
             echo "=== Config for $config_digest ==="
-            yq -P -oy ${{ inputs.bin }}/${config_sha}.config.json
+            yq -P -oy ${{ inputs.bin }}/${config_sha}
             echo
           done
 
