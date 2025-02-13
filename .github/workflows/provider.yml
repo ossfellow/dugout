@@ -60,21 +60,21 @@ jobs:
         with:
           path: artifacts
 
-      - run: chmod +x "./artifacts/wasmcloud-aarch64-apple-darwin/bin/${{ inputs.name }}-provider"
-      - run: chmod +x "./artifacts/wasmcloud-x86_64-apple-darwin/bin/${{ inputs.name }}-provider"
+      - run: chmod +x "./artifacts/${{ inputs.name }}-provider-aarch64-apple-darwin/bin/${{ inputs.name }}-provider"
+      - run: chmod +x "./artifacts/${{ inputs.name }}-provider-x86_64-apple-darwin/bin/${{ inputs.name }}-provider"
 
       - run: mv "./artifacts/wasmcloud-aarch64-apple-darwin/bin/wash" wash
       - run: chmod +x wash
 
       - run: |
           ./wash par create \
-                --binary "./artifacts/wasmcloud-aarch64-apple-darwin/bin/${{ inputs.name }}-provider" \
+                --binary "./artifacts/${{ inputs.name }}-provider-x86_64-apple-darwin/bin/${{ inputs.name }}-provider" \
                 --compress \
                 --destination "${{ inputs.name }}.par.gz" \
                 --name "${{ inputs.name }}-provider" \
                 --vendor wasmcloud \
                 --version ${{ steps.ctx.outputs.version }}
-          ./wash par insert --arch x86_64-macos   --binary "./artifacts/wasmcloud-x86_64-apple-darwin/bin/${{ inputs.name }}-provider" "${{ inputs.name }}.par.gz"
+          ./wash par insert --arch x86_64-macos   --binary "./artifacts/${{ inputs.name }}-provider-aarch64-apple-darwin/bin/${{ inputs.name }}-provider" "${{ inputs.name }}.par.gz"
           ./wash par inspect "${{ inputs.name }}.par.gz"
 
       # After par creation, attest it

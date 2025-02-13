@@ -242,9 +242,11 @@ jobs:
         include:
           - name: blobstore-azure
             subject: BLOBSTORE_AZURE_SUBJECT
+            embed_wit: true
 
           - name: http-server
             subject: HTTP_SERVER_SUBJECT
+            embed_wit: true
     needs:
       - build-wash-bin
       - build-provider-bin
@@ -256,7 +258,7 @@ jobs:
     uses: ./.github/workflows/provider.yml
     with:
       name: ${{ matrix.name }}
-
+      # embed_wit: ${{ matrix.embed_wit }}
 
   oci-wash:
     needs:

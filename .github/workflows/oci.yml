@@ -25,6 +25,11 @@ env:
 jobs:
   oci:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
     steps:
       - name: Prepare test environment
         uses: ossfellow/.github/actions/tugboat@main
