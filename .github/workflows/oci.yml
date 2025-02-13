@@ -79,23 +79,23 @@ jobs:
           skopeo copy --all oci-archive:./oci-wolfi dir:${{ inputs.bin}}
 
           echo "=== Image Manifest List ==="
-          yq -P -oy ${inputs.bin}/manifest.json
+          yq -P -oy ${{ inputs.bin }}/manifest.json
           echo
 
           echo "=== Processing Individual Manifests ==="
-          for digest in $(yq -r '.manifests.[].digest' ${inputs.bin}/manifest.json); do
+          for digest in $(yq -r '.manifests.[].digest' ${{ inputs.bin }}/manifest.json); do
             sha=${digest#sha256:}
             echo
             echo "=== Manifest for $digest ==="
-            yq -P -oy ${inputs.bin}/${sha}.manifest.json
+            yq -P -oy ${{ inputs.bin }}/${sha}.manifest.json
             echo
 
             # Get config digest and show its contents
-            config_digest=$(yq -r '.config.digest' ${inputs.bin}/${sha}.manifest.json)
+            config_digest=$(yq -r '.config.digest' ${{ inputs.bin }}/${sha}.manifest.json)
             config_sha=${config_digest#sha256:}
             echo
             echo "=== Config for $config_digest ==="
-            yq -P -oy ${inputs.bin}/${config_sha}.config.json
+            yq -P -oy ${{ inputs.bin }}/${config_sha}.config.json
             echo
           done
 

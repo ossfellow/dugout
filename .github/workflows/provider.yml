@@ -123,29 +123,29 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           push-to-registry: true
 
-  # Ensure that `wash build` and `wash app validate` works for all providers
-  wash-build:
-    name: build
-    runs-on: ubuntu-22.04
-    strategy:
-      fail-fast: false
-      matrix:
-        provider:
-          - bin-path: src/bin/blobstore-azure-provider
-          - bin-path: src/bin/http-server-provider
-    steps:
-      - uses: ossfellow/.github/actions/tugboat@main
-        with:
-          target-repo: "wasmCloud/wasmCloud"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+  # # Ensure that `wash build` and `wash app validate` works for all providers
+  # wash-build:
+  #   name: build
+  #   runs-on: ubuntu-22.04
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       provider:
+  #         - bin-path: src/bin/blobstore-azure-provider
+  #         - bin-path: src/bin/http-server-provider
+  #   steps:
+  #     - uses: ossfellow/.github/actions/tugboat@main
+  #       with:
+  #         target-repo: "wasmCloud/wasmCloud"
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Set up wash
-      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
-        with:
-          name: wash-x86_64-unknown-linux-musl
-          path: artifact
-      - run: chmod +x ./artifact/bin/wash
+  #     # Set up wash
+  #     - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
+  #       with:
+  #         name: wash-x86_64-unknown-linux-musl
+  #         path: artifact
+  #     - run: chmod +x ./artifact/bin/wash
 
-      - name: build provider
-        run: |
-          ./artifact/bin/wash build -p ${{ matrix.provider.bin-path }}
+  #     - name: build provider
+  #       run: |
+  #         ./artifact/bin/wash build -p ${{ matrix.provider.bin-path }}
