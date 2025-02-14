@@ -61,8 +61,8 @@ jobs:
           path: artifacts
           pattern: ${{ inputs.name }}-provider-*
 
-      - run: chmod +x "./artifacts/${{ inputs.name }}-provider-aarch64-unknown-linux-musl"
-      - run: chmod +x "./artifacts/${{ inputs.name }}-provider-x86_64-unknown-linux-musl"
+      - run: chmod +x "./artifacts/${{ inputs.name }}-provider-aarch64-unknown-linux-musl/bin/${{ inputs.name }}-provider"
+      - run: chmod +x "./artifacts/${{ inputs.name }}-provider-x86_64-unknown-linux-musl/bin/${{ inputs.name }}-provider"
 
       - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         with:
@@ -74,7 +74,7 @@ jobs:
 
       - run: |
           ./wash par create \
-                --binary "./artifacts/${{ inputs.name }}-provider-x86_64-unknown-linux-musl" \
+                --binary "./artifacts/${{ inputs.name }}-provider-x86_64-unknown-linux-musl/bin/${{ inputs.name }}-provider" \
                 --compress \
                 --destination "${{ inputs.name }}.par.gz" \
                 --name "${{ inputs.name }}-provider" \
