@@ -68,9 +68,9 @@ jobs:
         with:
           name: wash-x86_64-unknown-linux-musl
 
-      - run: ls -lh ./ ./bin/
-      - run: mv ./bin/wash wash
-      - run: chmod +x wash
+      - run: ls -lh ./artifacts/
+      - run: mv ./bin/wash ./wash
+      - run: chmod +x ./wash
 
       - run: |
           ./wash par create \
