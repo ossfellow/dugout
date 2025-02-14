@@ -80,19 +80,24 @@ runs:
       shell: bash
       run: |
         # Login to registry if credentials provided
-        if [ ! -z "${{ inputs.registry-credentials }}" ]; then
+        if [ -n "${{ inputs.registry-credentials }}" ]; then
           echo "${{ inputs.registry-credentials }}" | jq -r '.[] | "\(.url) \(.username) \(.password)"' | while read url username password; do
             echo "Logging in to $url"
             echo "$password" | regctl registry login -u "$username" --pass-stdin "$url"
           done
         fi
 
-        # Download from registry to workspace
-        regctl image copy \
-          ${{ inputs.source-image }}:${{ inputs.source-tag }} \
+        # Import from OCI archive to workspace
+        regctl image import \
           ocidir://workspace:${{ inputs.source-tag }} \
-          --digest-tags \
-          --referrers
+          ${{ inputs.source-image }}
+
+        # # Download from registry to workspace
+        # regctl image copy \
+        #   ${{ inputs.source-image }}:${{ inputs.source-tag }} \
+        #   ocidir://workspace:${{ inputs.source-tag }} \
+        #   --digest-tags \
+        #   --referrers
 
     # Enrich image metadata
     - name: Enrich ${{ inputs.source-image }}:${{ inputs.source-tag }} image metadata

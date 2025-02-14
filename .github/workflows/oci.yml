@@ -72,7 +72,7 @@ jobs:
         run: |
           nix build -L .#${{ inputs.bin }}-oci-wolfi -o ./oci-wolfi
 
-      - name: Inspect current ${{ inputs.bin}} image configuration files (Image Manifest V 2, Schema 2 - aka. Docker Distribution format)
+      - name: Inspect current ${{ inputs.bin}} image configuration files
         if: ${{ env.TEST_THIS_WORKFLOW }}
         run: |
           mkdir -p ${{ inputs.bin}}
@@ -107,9 +107,9 @@ jobs:
       #     skopeo copy --all oci-archive:./oci-wolfi oci:./wolfi
 
       - name: Upload OCI archive
-        uses: actions/upload-artifact@v4
         if: ${{ env.TEST_THIS_WORKFLOW }}
         continue-on-error: true
+        uses: actions/upload-artifact@v4
         with:
           name: wolfi
           path: ./oci-wolfi

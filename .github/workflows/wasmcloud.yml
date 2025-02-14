@@ -59,8 +59,8 @@ jobs:
     strategy:
       matrix:
         config:
-          - target: aarch64-apple-darwin
-          - target: x86_64-apple-darwin
+          - target: aarch64-unknown-linux-musl
+          - target: x86_64-unknown-linux-musl
 
     name: wash-${{ matrix.config.target }}
     runs-on: ubuntu-22.04
@@ -88,7 +88,7 @@ jobs:
         uses: ./.github/actions/artifact-attestation
         if: ${{ env.RUN_BINARY_ATTESTATION }}
         with:
-          subject-path: ./wash-${{ matrix.config.target }}/bin/wash
+          subject-path: ./wash-${{ matrix.config.target }}
           subject-name: wash-${{ matrix.config.target }}
           show-summary: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -110,7 +110,7 @@ jobs:
         if: ${{ env.RUN_BINARY_ATTESTATION }}
         with:
           artifact-type: sbom
-          subject-path: ./wash-${{ matrix.config.target }}/bin/wash
+          subject-path: ./wash-${{ matrix.config.target }}
           subject-name: wash-${{ matrix.config.target }}
           show-summary: true
 
@@ -118,8 +118,8 @@ jobs:
     strategy:
       matrix:
         config:
-          - target: aarch64-apple-darwin
-          - target: x86_64-apple-darwin
+          - target: aarch64-unknown-linux-musl
+          - target: x86_64-unknown-linux-musl
 
     name: wasmcloud-${{ matrix.config.target }}
     runs-on: ubuntu-22.04
@@ -147,7 +147,7 @@ jobs:
         uses: ./.github/actions/artifact-attestation
         if: ${{ env.RUN_BINARY_ATTESTATION }}
         with:
-          subject-path: ./wasmcloud-${{ matrix.config.target }}/bin/wasmcloud
+          subject-path: ./wasmcloud-${{ matrix.config.target }}
           subject-name: wasmcloud-${{ matrix.config.target }}
           show-summary: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -169,7 +169,7 @@ jobs:
         if: ${{ env.RUN_BINARY_ATTESTATION }}
         with:
           artifact-type: sbom
-          subject-path: ./wasmcloud-${{ matrix.config.target }}/bin/wasmcloud
+          subject-path: ./wasmcloud-${{ matrix.config.target }}
           subject-name: wasmcloud-${{ matrix.config.target }}
           show-summary: true
 
@@ -181,8 +181,8 @@ jobs:
           - http-server
 
         target:
-          - aarch64-apple-darwin
-          - x86_64-apple-darwin
+          - aarch64-unknown-linux-musl
+          - x86_64-unknown-linux-musl
 
     name: ${{ matrix.name }}-provider-${{ matrix.target }}
     runs-on: ubuntu-22.04
@@ -210,7 +210,7 @@ jobs:
         uses: ./.github/actions/artifact-attestation
         if: ${{ env.RUN_PROVIDER_ATTESTATION }}
         with:
-          subject-path: ./${{ matrix.name }}-provider-${{ matrix.target }}/bin/${{ matrix.name }}-provider
+          subject-path: ./${{ matrix.name }}-provider-${{ matrix.target }}
           subject-name: ${{ matrix.name }}-provider-${{ matrix.target }}
           show-summary: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -232,7 +232,7 @@ jobs:
         if: ${{ env.RUN_PROVIDER_ATTESTATION }}
         with:
           artifact-type: sbom
-          subject-path: ./${{ matrix.name }}-provider-${{ matrix.target }}/bin/${{ matrix.name }}-provider
+          subject-path: ./${{ matrix.name }}-provider-${{ matrix.target }}
           subject-name: ${{ matrix.name }}-provider-${{ matrix.target }}
           show-summary: true
 
