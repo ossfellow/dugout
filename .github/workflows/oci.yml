@@ -117,7 +117,8 @@ jobs:
 
       - name: Push `${{ inputs.bin }}` version tag
         if: ${{ env.RUN_OCI_ATTESTATION }} && startswith(github.ref, format('refs/tags/{0}v', matrix.prefix))
-        continue-on-error: ${{ env.TEST_THIS_WORKFLOW }}
+        continue-on-error: true
+        # continue-on-error: ${{ env.TEST_THIS_WORKFLOW }}
         uses: ./.github/actions/oci-transformations
         with:
           source-image: oci-archive:./oci-wolfi

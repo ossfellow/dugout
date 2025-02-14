@@ -59,11 +59,17 @@ jobs:
       - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         with:
           path: artifacts
+          pattern: ${{ inputs.name }}-provider-*
 
       - run: chmod +x "./artifacts/${{ inputs.name }}-provider-aarch64-unknown-linux-musl"
       - run: chmod +x "./artifacts/${{ inputs.name }}-provider-x86_64-unknown-linux-musl"
 
-      - run: mv "./artifacts/wash-x86_64-unknown-linux-musl" wash
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
+        with:
+          name: wash-x86_64-unknown-linux-musl
+
+      - run: ls -lh ./ ./bin/
+      - run: mv ./bin/wash wash
       - run: chmod +x wash
 
       - run: |
