@@ -100,7 +100,7 @@ jobs:
       # GitHub Container Registry
       - name: Push `${{ inputs.name }}` provider version tag to GitHub Container Registry
         # if: startswith(github.ref, format('refs/tags/provider-{0}-v', inputs.name))
-        run: ./wash push ghcr.io/${{ github.repository }}/${{ steps.ctx.outputs.owner }}/${{ inputs.name }}:${{ steps.ctx.outputs.version }} "${{ inputs.name }}.par.gz"
+        run: ./wash push ghcr.io/${{ github.repository }}/${{ inputs.name }}:${{ steps.ctx.outputs.version }} "${{ inputs.name }}.par.gz"
         env:
           WASH_REG_USER: ${{ github.repository_owner }}
           WASH_REG_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
@@ -111,7 +111,7 @@ jobs:
         uses: ./.github/actions/artifact-attestation
         with:
           artifact-type: image
-          subject-path: ghcr.io/${{ github.repository }}/${{ steps.ctx.outputs.owner }}/${{ inputs.name }}:${{ steps.ctx.outputs.version }}
+          subject-path: ghcr.io/${{ github.repository }}/${{ inputs.name }}
           subject-name: ${{ inputs.name }}-provider
           show-summary: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -123,7 +123,7 @@ jobs:
         uses: ./.github/actions/artifact-attestation
         with:
           artifact-type: sbom
-          subject-path: ghcr.io/${{ github.repository }}/${{ steps.ctx.outputs.owner }}/${{ inputs.name }}:${{ steps.ctx.outputs.version }}
+          subject-path: ghcr.io/${{ github.repository }}/${{ inputs.name }}
           subject-name: ${{ inputs.name }}-provider-x86_64-unknown-linux-musl
           show-summary: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
