@@ -80,9 +80,7 @@ jobs:
                 --name "${{ inputs.name }}-provider" \
                 --vendor wasmcloud \
                 --version ${{ steps.ctx.outputs.version }}
-          ls -lh ./
-          ./wash par insert --arch x86_64-macos   --binary "./artifacts/${{ inputs.name }}-provider-aarch64-unknown-linux-musl" "${{ inputs.name }}.par.gz"
-          ls -lh ./
+          ./wash par insert --arch aarch64-linux   --binary "./artifacts/${{ inputs.name }}-provider-aarch64-unknown-linux-musl/bin/${{ inputs.name }}-provider" "${{ inputs.name }}.par.gz"
           ./wash par inspect "${{ inputs.name }}.par.gz"
 
       # After par creation, attest it
