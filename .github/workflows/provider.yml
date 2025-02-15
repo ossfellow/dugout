@@ -23,7 +23,6 @@ jobs:
       packages: write
       id-token: write
       attestations: write
-    # TODO: Validate this can correctly extract version number of released version of providers
     steps:
       - name: Prepare test environment
         uses: ossfellow/.github/actions/tugboat@main
@@ -100,7 +99,7 @@ jobs:
 
       # GitHub Container Registry
       - name: Push `${{ inputs.name }}` provider version tag to GitHub Container Registry
-        if: startswith(github.ref, format('refs/tags/provider-{0}-v', inputs.name))
+        # if: startswith(github.ref, format('refs/tags/provider-{0}-v', inputs.name))
         run: ./wash push ghcr.io/${{ steps.ctx.outputs.owner }}/${{ inputs.name }}:${{ steps.ctx.outputs.version }} "${{ inputs.name }}.par.gz"
         env:
           WASH_REG_USER: ${{ github.repository_owner }}
@@ -108,7 +107,7 @@ jobs:
 
       # First attest the provider image
       - name: Attest Provider Image
-        if: startswith(github.ref, format('refs/tags/provider-{0}-v', inputs.name))
+        # if: startswith(github.ref, format('refs/tags/provider-{0}-v', inputs.name))
         uses: ./.github/actions/artifact-attestation
         with:
           artifact-type: image
@@ -118,13 +117,14 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       # Then attest and link its SBOM
+      # TODO: Figure out how platform information could be determined in this workflow and added to SBOM attestation's subject-name
       - name: Attest Provider Image SBOM
         if: startswith(github.ref, format('refs/tags/provider-{0}-v', inputs.name)) && ${{ env.RUN_PROVIDER_ATTESTATION }}
         uses: ./.github/actions/artifact-attestation
         with:
           artifact-type: sbom
           subject-path: ghcr.io/${{ steps.ctx.outputs.owner }}/${{ inputs.name }}:${{ steps.ctx.outputs.version }}
-          subject-name: ${{ inputs.name }}-provider
+          subject-name: ${{ inputs.name }}-provider-x86_64-unknown-linux-musl
           show-summary: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
           push-to-registry: true
