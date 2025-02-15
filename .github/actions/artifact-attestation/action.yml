@@ -112,6 +112,7 @@ runs:
           SUBJECT_NAME="${SUBJECT_NAME//\//_}"
           SUBJECT_NAME="${SUBJECT_NAME//\./_}"
         fi
+        echo "SUBJECT_NAME = ${SUBJECT_NAME}"
         echo "SUBJECT_NAME=${SUBJECT_NAME}" >> $GITHUB_ENV
 
         # Preserve attestation metadata file
