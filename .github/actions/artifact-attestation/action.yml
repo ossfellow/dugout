@@ -1,32 +1,35 @@
-name: 'Artifact Attestation'
-description: 'Attest artifacts of type `binary`, `image`, and `sbom`'
+name: "Artifact Attestation"
+description: "Attest artifacts of type `binary`, `image`, and `sbom`"
 inputs:
   artifact-type:
-    description: 'Type of artifact to attest'
+    description: "Type of artifact to attest"
     required: true
-    default: 'binary'
+    default: "binary"
+  artifact-name:
+    description: "Name of the artifact to attest"
+    required: false
   subject-path:
-    description: 'Path to the artifact serving as the subject of the attestation'
+    description: "Path to the artifact serving as the subject of the attestation"
     required: false
   subject-digest:
-    description: 'SHA256 digest of the subject for the attestation'
+    description: "SHA256 digest of the subject for the attestation"
     required: false
   subject-name:
-    description: 'Subject name as it should appear in the attestation'
+    description: "Subject name as it should appear in the attestation"
     required: true
   subject-checksums:
-    description: 'Path to checksums file containing digest and name of subjects for attestation'
+    description: "Path to checksums file containing digest and name of subjects for attestation"
     required: false
   push-to-registry:
-    description: 'Whether to push the attestation to the image registry'
+    description: "Whether to push the attestation to the image registry"
     required: false
-    default: 'false'
+    default: "false"
   show-summary:
-    description: 'Whether to attach a list of generated attestations to the workflow run summary page'
+    description: "Whether to attach a list of generated attestations to the workflow run summary page"
     required: false
-    default: 'true'
+    default: "true"
   github-token:
-    description: 'GitHub token used to make authenticated API requests'
+    description: "GitHub token used to make authenticated API requests"
     required: false
     default: ${{ github.token }}
 
@@ -40,8 +43,17 @@ runs:
       run: |
         mkdir -p ${{ github.workspace }}/attestations-and-sboms
         echo "PROVENANCE_ARTIFACTS_DIR=${{ github.workspace }}/attestations-and-sboms" >> $GITHUB_ENV
-        echo "LOCAL_SBOM_FILE=${{ github.workspace }}/attestations-and-sboms/${{ inputs.subject-name }}.spdx.json" >> $GITHUB_ENV
-        echo "DOWNLOAD_SBOM=$( [[ ${{ inputs.artifact-type }} == 'sbom' ]] && [[ ! -f ${{ github.workspace }}/attestations-and-sboms/${{ inputs.subject-name }}.spdx.json ]] && echo 'true' || echo 'false' )" >> $GITHUB_ENV
+
+        # Determine artifact name for SBOM
+        if [[ -n "${{ inputs.artifact-name }}" ]]; then
+          SBOM_NAME="${{ inputs.artifact-name }}"
+        else
+          SBOM_NAME="${{ inputs.subject-name }}"
+        fi
+        echo "SBOM_NAME=${SBOM_NAME}" >> $GITHUB_ENV
+
+        echo "LOCAL_SBOM_FILE=${{ github.workspace }}/attestations-and-sboms/${SBOM_NAME}.spdx.json" >> $GITHUB_ENV
+        echo "DOWNLOAD_SBOM=$( [[ ${{ inputs.artifact-type }} == 'sbom' ]] && [[ ! -f ${{ github.workspace }}/attestations-and-sboms/${SBOM_NAME}.spdx.json ]] && echo 'true' || echo 'false' )" >> $GITHUB_ENV
         echo "ARTIFACT_TYPE=${{ inputs.artifact-type }}" >> $GITHUB_ENV
 
     - name: Attest ${{ inputs.subject-name }} ${{ inputs.artifact-type }}
@@ -62,8 +74,8 @@ runs:
       continue-on-error: true
       uses: actions/download-artifact@v4
       with:
-        name: ${{ inputs.subject-name }}.spdx.json
-        path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}.spdx.json
+        name: ${{ env.SBOM_NAME }}.spdx.json
+        path: ${{ env.LOCAL_SBOM_FILE }}
         merge-multiple: true
 
     - name: Attest ${{ inputs.subject-name }} SBOM
@@ -74,7 +86,7 @@ runs:
         subject-digest: ${{ inputs.subject-digest }}
         subject-name: ${{ inputs.subject-name }}
         subject-checksums: ${{ inputs.subject-digest && '' ||  inputs.subject-checksums }}
-        sbom-path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}.spdx.json
+        sbom-path: ${{ env.LOCAL_SBOM_FILE }}
         push-to-registry: ${{ inputs.subject-name && inputs.subject-digest && inputs.push-to-registry || 'false' }}
         show-summary: ${{ inputs.show-summary }}
         github-token: ${{ inputs.github-token }}
@@ -115,7 +127,7 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.subject-name }}-attestation.json
-        path:  ${{ env.PROVENANCE_ARTIFACTS_DIR }}
+        path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}
         if-no-files-found: warn
         overwrite: true
 
