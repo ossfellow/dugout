@@ -105,13 +105,28 @@ jobs:
           WASH_REG_USER: ${{ github.repository_owner }}
           WASH_REG_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
+      # Get image digest for attestation
+      - name: Get image digest
+        id: digest
+        run: |
+          # Install regctl
+          curl -L https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 -o /usr/local/bin/regctl
+          chmod +x /usr/local/bin/regctl
+
+          # Login to registry
+          echo "${{ secrets.GITHUB_TOKEN }}" | regctl registry login -u "${{ github.actor }}" --pass-stdin ghcr.io
+          
+          # Get image digest
+          IMAGE_DIGEST=$(regctl image digest ghcr.io/${{ github.repository }}/${{ inputs.name }}:${{ steps.ctx.outputs.version }})
+          echo "digest=${IMAGE_DIGEST}" >> $GITHUB_OUTPUT
+
       # First attest the provider image
       - name: Attest Provider Image
         # if: startswith(github.ref, format('refs/tags/provider-{0}-v', inputs.name))
         uses: ./.github/actions/artifact-attestation
         with:
           artifact-type: image
-          subject-path: ghcr.io/${{ github.repository }}/${{ inputs.name }}:${{ steps.ctx.outputs.version }}
+          subject-digest: ${{ steps.digest.outputs.digest }}
           subject-name: ghcr.io/${{ github.repository }}/${{ inputs.name }}
           show-summary: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -123,8 +138,8 @@ jobs:
         uses: ./.github/actions/artifact-attestation
         with:
           artifact-type: sbom
-          subject-path: ghcr.io/${{ github.repository }}/${{ inputs.name }}:${{ steps.ctx.outputs.version }}
           artifact-name: ${{ inputs.name }}-provider-x86_64-unknown-linux-musl
+          subject-digest: ${{ steps.digest.outputs.digest }}
           subject-name: ghcr.io/${{ github.repository }}/${{ inputs.name }}
           show-summary: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
