@@ -108,7 +108,7 @@ jobs:
 
       # First attest the provider image
       - name: Attest Provider Image
-        if: startswith(github.ref, format('refs/tags/provider-{0}-v', inputs.name)) && ${{ env.RUN_PROVIDER_ATTESTATION }}
+        if: startswith(github.ref, format('refs/tags/provider-{0}-v', inputs.name))
         uses: ./.github/actions/artifact-attestation
         with:
           artifact-type: image
