@@ -121,11 +121,13 @@ jobs:
           echo "digest=${IMAGE_DIGEST}" >> $GITHUB_OUTPUT
 
       # First attest the provider image
+      # TODO: Figure out how platform information could be determined in this workflow and added to SBOM attestation's subject-name
       - name: Attest Provider Image
         # if: startswith(github.ref, format('refs/tags/provider-{0}-v', inputs.name))
         uses: ./.github/actions/artifact-attestation
         with:
           artifact-type: image
+          artifact-name: ${{ inputs.name }}-provider-x86_64-unknown-linux-musl
           subject-digest: ${{ steps.digest.outputs.digest }}
           subject-name: ghcr.io/${{ github.repository }}/${{ inputs.name }}
           show-summary: true
