@@ -124,6 +124,7 @@ jobs:
         with:
           artifact-type: sbom
           subject-path: ghcr.io/${{ github.repository }}/${{ inputs.name }}:${{ steps.ctx.outputs.version }}
+          artifact-name: ${{ inputs.name }}-provider-x86_64-unknown-linux-musl
           subject-name: ghcr.io/${{ github.repository }}/${{ inputs.name }}
           show-summary: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
