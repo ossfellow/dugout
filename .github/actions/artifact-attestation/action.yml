@@ -107,36 +107,35 @@ runs:
 
         # For images, subject-name won't be a valid file name to be used for the metadata and attestation file names;
         # so for this type, we need to transform it (/ and .) to a valid file name.
+        SUBJECT_NAME="${{ inputs.subject-name }}"
         if [[ "${{ inputs.artifact-type }}" == "image" ]]; then
-          SUBJECT_NAME="${{ inputs.subject-name//\//_}}"
-          SUBJECT_NAME="${{ inputs.subject-name//\./_}}"
-        else
-          SUBJECT_NAME="${{ inputs.subject-name }}"
+          SUBJECT_NAME="${SUBJECT_NAME//\//_}"
+          SUBJECT_NAME="${SUBJECT_NAME//\./_}"
         fi
         echo "SUBJECT_NAME=${SUBJECT_NAME}" >> $GITHUB_ENV
 
         # Preserve attestation metadata file
-        echo "# Build attestation metadata for: ${{ inputs.subject-name }}" > "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ SUBJECT_NAME }}-attestation-metadata.yaml"
-        echo "attestation_id: ${ATTESTATION_ID}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ SUBJECT_NAME }}-attestation-metadata.yaml"
+        echo "# Build attestation metadata for: ${{ inputs.subject-name }}" > "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation-metadata.yaml"
+        echo "attestation_id: ${ATTESTATION_ID}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation-metadata.yaml"
         echo "attestation_url: ${ATTESTATION_URL}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
-        echo "artifact_type: ${{ inputs.artifact-type }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ SUBJECT_NAME }}-attestation-metadata.yaml"
-        echo "subject_name: ${{ inputs.subject-name }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ SUBJECT_NAME }}-attestation-metadata.yaml"
-        echo "subject_path: ${{ inputs.subject-path }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ SUBJECT_NAME }}-attestation-metadata.yaml"
-        echo "subject_digest: ${{ inputs.subject-digest }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ SUBJECT_NAME }}-attestation-metadata.yaml"
-        echo "subject_checksums: ${{ inputs.subject-checksums }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ SUBJECT_NAME }}-attestation-metadata.yaml"
-        echo "sbom_path: $([ -f ${{ env.LOCAL_SBOM_FILE }} ] && echo ${{ env.LOCAL_SBOM_FILE }} || echo '')" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ SUBJECT_NAME }}-attestation-metadata.yaml"
-        echo "push_to_registry: ${{ inputs.push-to-registry }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ SUBJECT_NAME }}-attestation-metadata.yaml"
-        echo "show_summary: ${{ inputs.show-summary }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ SUBJECT_NAME }}-attestation-metadata.yaml"
+        echo "artifact_type: ${{ inputs.artifact-type }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation-metadata.yaml"
+        echo "subject_name: ${{ inputs.subject-name }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation-metadata.yaml"
+        echo "subject_path: ${{ inputs.subject-path }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation-metadata.yaml"
+        echo "subject_digest: ${{ inputs.subject-digest }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation-metadata.yaml"
+        echo "subject_checksums: ${{ inputs.subject-checksums }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation-metadata.yaml"
+        echo "sbom_path: $([ -f ${{ env.LOCAL_SBOM_FILE }} ] && echo ${{ env.LOCAL_SBOM_FILE }} || echo '')" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation-metadata.yaml"
+        echo "push_to_registry: ${{ inputs.push-to-registry }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation-metadata.yaml"
+        echo "show_summary: ${{ inputs.show-summary }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation-metadata.yaml"
 
         # Save attestation file if bundle path exists
         if [[ -n "${BUNDLE_PATH}" ]]; then
-          cp "${BUNDLE_PATH}" "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ SUBJECT_NAME }}-attestation.json"
+          cp "${BUNDLE_PATH}" "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation.json"
         fi
 
     - name: Upload attestation record
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ SUBJECT_NAME }}-attestation.json
+        name: ${{ env.SUBJECT_NAME }}-attestation.json
         path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}
         if-no-files-found: warn
         overwrite: true
@@ -144,7 +143,7 @@ runs:
     - name: Upload attestation metadata
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ SUBJECT_NAME }}-attestation-metadata.yaml
+        name: ${{ env.SUBJECT_NAME }}-attestation-metadata.yaml
         path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}
         if-no-files-found: warn
         overwrite: true
