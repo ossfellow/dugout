@@ -133,6 +133,11 @@ runs:
           cp "${BUNDLE_PATH}" "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation.json"
         fi
 
+    - name: debug
+      shell: bash
+      run: |
+        echo "SUBJECT_NAME=${{ env.SUBJECT_NAME }}"
+
     - name: Upload attestation record
       uses: actions/upload-artifact@v4
       with:
