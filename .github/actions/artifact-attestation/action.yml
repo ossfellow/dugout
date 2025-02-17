@@ -79,6 +79,7 @@ runs:
         merge-multiple: true
 
     - name: debug
+      if: inputs.artifact-type == 'sbom'
       shell: bash
       run: |
         ls -lh ${{ github.workspace }}/attestations-and-sboms/
