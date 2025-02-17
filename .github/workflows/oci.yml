@@ -139,8 +139,8 @@ jobs:
           registry-credentials: |
             [
               {
-                "url": "ghcr.io",
-                "username": "${{ github.actor }}",
-                "password": "${{ secrets.GITHUB_TOKEN }}"
+                \"url\": \"ghcr.io\",
+                \"username\": \"${{ github.actor }}\",
+                \"password\": \"${{ secrets.GITHUB_TOKEN }}\"
               }
             ]
