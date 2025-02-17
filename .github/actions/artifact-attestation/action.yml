@@ -81,7 +81,7 @@ runs:
     - name: debug
       shell: bash
       run: |
-        ls -lh ${{ env.LOCAL_SBOM_FILE }}/..
+        ls -lh ${{ github.workspace }}/attestations-and-sboms/
         ls -lh ${{ env.LOCAL_SBOM_FILE }}
 
     - name: Attest ${{ inputs.subject-name }} SBOM
