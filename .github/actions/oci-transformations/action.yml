@@ -118,6 +118,7 @@ runs:
 
           # Get current annotations from platform manifest
           CURRENT_ANNOTATIONS=$(regctl blob get ${IMAGE_PATH}:${{ inputs.source-tag }} ${digest} -v error | yq -r '.annotations // {}')
+          echo "CURRENT_ANNOTATIONS: $CURRENT_ANNOTATIONS"
 
           # Build annotation arguments
           ANNOTATION_ARGS=""
@@ -132,29 +133,30 @@ runs:
           fi
 
           # Optional annotations
-          if [ ! -z "${{ inputs.image-authors }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.authors"]' >/dev/null; then
+          if [ -n "${{ inputs.image-authors }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.authors"]' >/dev/null; then
             ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.authors=${{ inputs.image-authors }}"
           fi
 
-          if [ ! -z "${{ inputs.vendor }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.vendor"]' >/dev/null; then
+          if [ -n "${{ inputs.vendor }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.vendor"]' >/dev/null; then
             ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.vendor=${{ inputs.vendor }}"
           fi
 
-          if [ ! -z "${{ inputs.source-repository }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.source"]' >/dev/null; then
+          if [ -n "${{ inputs.source-repository }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.source"]' >/dev/null; then
             ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.source=${{ inputs.source-repository }}"
           fi
 
-          if [ ! -z "${{ inputs.image-description }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.description"]' >/dev/null; then
+          if [ -n "${{ inputs.image-description }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.description"]' >/dev/null; then
             ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.description=${{ inputs.image-description }}"
           fi
 
-          if [ ! -z "${{ inputs.image-version }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.version"]' >/dev/null; then
+          if [ -n "${{ inputs.image-version }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.version"]' >/dev/null; then
             ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.version=${{ inputs.image-version }}"
           fi
+          echo "ANNOTATION_ARGS: $ANNOTATION_ARGS"
 
           # Always run regctl for OCI conversion, add annotations if any
           regctl image mod \
-            ${IMAGE_PATH}@${digest} \
+            ${IMAGE_PATH}@${{ inputs.source-tag }} \
             --replace \
             --to-oci \
             --to-oci-referrers \
