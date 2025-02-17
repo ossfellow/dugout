@@ -108,9 +108,19 @@ runs:
         config: .syft.yaml
         output-file: ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json
 
+    # Make sure the SBOM file exists
+    - name: Check if SBOM file exists
+      shell: bash
+      run: |
+        SBOM_FILE_EXISTS=false
+        if [ -f "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json" ]; then
+          SBOM_FILE_EXISTS=true
+        fi
+        echo "SBOM_FILE_EXISTS=${SBOM_FILE_EXISTS}" >> $GITHUB_ENV
+
     # Upload the SBOM to common artifact storage
     - name: Upload ${{ inputs.artifact-name }} SBOM
-      # if: hashFiles(format('{0}.spdx.json', inputs.artifact-name)) != ''
+      if: ${{ env.SBOM_FILE_EXISTS }}
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.artifact-name }}.spdx.json

@@ -78,6 +78,12 @@ runs:
         path: ${{ env.LOCAL_SBOM_FILE }}
         merge-multiple: true
 
+    - name: debug
+      shell: bash
+      run: |
+        ls -lh ${{ env.LOCAL_SBOM_FILE }}/..
+        ls -lh ${{ env.LOCAL_SBOM_FILE }}
+
     - name: Attest ${{ inputs.subject-name }} SBOM
       if: inputs.artifact-type == 'sbom'
       uses: actions/attest-sbom@v2
