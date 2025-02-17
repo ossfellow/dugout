@@ -112,13 +112,12 @@ runs:
           SUBJECT_NAME="${SUBJECT_NAME//\//_}"
           SUBJECT_NAME="${SUBJECT_NAME//\./_}"
         fi
-        echo "SUBJECT_NAME = ${SUBJECT_NAME}"
         echo "SUBJECT_NAME=${SUBJECT_NAME}" >> $GITHUB_ENV
 
         # Preserve attestation metadata file
         echo "# Build attestation metadata for: ${{ inputs.subject-name }}" > "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation-metadata.yaml"
         echo "attestation_id: ${ATTESTATION_ID}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation-metadata.yaml"
-        echo "attestation_url: ${ATTESTATION_URL}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}-attestation-metadata.yaml"
+        echo "attestation_url: ${ATTESTATION_URL}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation-metadata.yaml"
         echo "artifact_type: ${{ inputs.artifact-type }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation-metadata.yaml"
         echo "subject_name: ${{ inputs.subject-name }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation-metadata.yaml"
         echo "subject_path: ${{ inputs.subject-path }}" >> "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation-metadata.yaml"
@@ -132,11 +131,6 @@ runs:
         if [[ -n "${BUNDLE_PATH}" ]]; then
           cp "${BUNDLE_PATH}" "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${SUBJECT_NAME}-attestation.json"
         fi
-
-    - name: debug
-      shell: bash
-      run: |
-        echo "SUBJECT_NAME=${{ env.SUBJECT_NAME }}"
 
     - name: Upload attestation record
       uses: actions/upload-artifact@v4
