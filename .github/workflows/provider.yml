@@ -115,7 +115,7 @@ jobs:
 
           # Login to registry
           echo "${{ secrets.GITHUB_TOKEN }}" | regctl registry login -u "${{ github.actor }}" --pass-stdin ghcr.io
-          
+
           # Get image digest
           IMAGE_DIGEST=$(regctl image digest ghcr.io/${{ github.repository }}/${{ inputs.name }}:${{ steps.ctx.outputs.version }})
           echo "digest=${IMAGE_DIGEST}" >> $GITHUB_OUTPUT
@@ -145,7 +145,7 @@ jobs:
           subject-name: ghcr.io/${{ github.repository }}/${{ inputs.name }}
           show-summary: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          push-to-registry: true
+          push-to-registry: false
 
   # # Ensure that `wash build` and `wash app validate` works for all providers
   # wash-build:
