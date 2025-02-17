@@ -79,6 +79,7 @@ runs:
         merge-multiple: true
 
     - name: Attest ${{ inputs.subject-name }} SBOM
+      id: attest-sbom
       if: inputs.artifact-type == 'sbom'
       uses: actions/attest-sbom@v2
       with:
