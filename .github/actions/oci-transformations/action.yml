@@ -134,15 +134,15 @@ runs:
 
           # Optional annotations
           if [ -n "${{ inputs.image-authors }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.authors"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.authors=${{ inputs.image-authors }}"
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.authors=\"${{ inputs.image-authors }}\""
           fi
 
           if [ -n "${{ inputs.vendor }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.vendor"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.vendor=${{ inputs.vendor }}"
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.vendor=\"${{ inputs.vendor }}\""
           fi
 
           if [ -n "${{ inputs.source-repository }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.source"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.source=${{ inputs.source-repository }}"
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.source=\"${{ inputs.source-repository }}\""
           fi
 
           if [ -n "${{ inputs.image-description }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.description"]' >/dev/null; then
