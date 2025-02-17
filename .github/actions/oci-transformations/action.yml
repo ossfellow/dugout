@@ -87,10 +87,17 @@ runs:
           done
         fi
 
+        # Strip the oci-archive:// prefix if present
+        SOURCE_IMAGE=${{ inputs.source-image }}
+        if [[ "${{ inputs.source-image }}" == oci-archive:* ]]; then
+          SOURCE_IMAGE=${{ inputs.source-image }}
+          SOURCE_IMAGE=${SOURCE_IMAGE#oci-archive:}
+        fi
+
         # Import from OCI archive to workspace
         regctl image import \
           ocidir://workspace:${{ inputs.source-tag }} \
-          ${{ inputs.source-image }}
+          ${SOURCE_IMAGE}
 
         # # Download from registry to workspace
         # regctl image copy \
