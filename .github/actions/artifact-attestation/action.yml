@@ -75,15 +75,8 @@ runs:
       uses: actions/download-artifact@v4
       with:
         name: ${{ env.SBOM_NAME }}.spdx.json
-        path: ${{ env.LOCAL_SBOM_FILE }}
+        path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}
         merge-multiple: true
-
-    - name: debug
-      if: inputs.artifact-type == 'sbom'
-      shell: bash
-      run: |
-        ls -lh ${{ github.workspace }}/attestations-and-sboms/
-        ls -lh ${{ env.LOCAL_SBOM_FILE }}
 
     - name: Attest ${{ inputs.subject-name }} SBOM
       if: inputs.artifact-type == 'sbom'
