@@ -159,7 +159,7 @@ runs:
             --to-oci \
             --to-oci-referrers \
             --label-to-annotation \
-            ${ANNOTATION_ARGS}
+            "${ANNOTATION_ARGS}"
         done
 
     # Show image metadata if requested
