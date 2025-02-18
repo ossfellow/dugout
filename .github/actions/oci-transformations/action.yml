@@ -129,7 +129,7 @@ runs:
           fi
 
           if ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.title"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.title=${{ inputs.image-title }}"
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.title=\"${{ inputs.image-title }}\""
           fi
 
           # Optional annotations
@@ -146,11 +146,11 @@ runs:
           fi
 
           if [ -n "${{ inputs.image-description }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.description"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.description=${{ inputs.image-description }}"
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.description=\"${{ inputs.image-description }}\""
           fi
 
           if [ -n "${{ inputs.image-version }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.version"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.version=${{ inputs.image-version }}"
+            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=[*]org.opencontainers.image.version=\${{ inputs.image-version }}"
           fi
           echo "ANNOTATION_ARGS: $ANNOTATION_ARGS"
 
@@ -160,9 +160,16 @@ runs:
             --replace \
             --to-oci \
             --to-oci-referrers \
-            --label-to-annotation
-            # "${ANNOTATION_ARGS}"
+            --label-to-annotation \
+            "${ANNOTATION_ARGS}"
         done
+
+    # Debug
+    - name: Debug
+      shell: bash
+      run: |
+        echo "OCI directory contents:"
+        ls lhR ${IMAGE_PATH}:${{ inputs.source-tag }}
 
     # Show image metadata if requested
     - name: Show ${{ inputs.source-image }}:${{ inputs.source-tag }} image enriched metadata
