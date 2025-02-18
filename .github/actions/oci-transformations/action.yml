@@ -156,7 +156,7 @@ runs:
 
           # Always run regctl for OCI conversion, add annotations if any
           regctl image mod \
-            ${IMAGE_PATH}@${{ inputs.source-tag }} \
+            ${IMAGE_PATH}:${{ inputs.source-tag }} \
             --replace \
             --to-oci \
             --to-oci-referrers \
