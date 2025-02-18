@@ -111,8 +111,8 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
-          name: wolfi
-          path: ./oci-wolfi
+          name: oci-wolfi
+          path: ./
           overwrite: true
 
       - name: Push `${{ inputs.bin }}` version tag
