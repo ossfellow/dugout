@@ -76,7 +76,7 @@ runs:
 
     # Download from registry if not an OCI directory or archive
     - name: Download ${{ inputs.source-image }}:${{ inputs.source-tag }} from registry
-      if: ${{ !startsWith(inputs.source-image, 'ocidir://') && !startsWith(inputs.source-image, 'oci-archive://') }}
+      if: ${{ !startsWith(inputs.source-image, 'ocidir://') && !startsWith(inputs.source-image, 'oci-archive:') }}
       shell: bash
       run: |
         # Login to registry if credentials provided
