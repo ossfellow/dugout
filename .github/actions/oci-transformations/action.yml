@@ -87,31 +87,19 @@ runs:
           done
         fi
 
-        # Strip the oci-archive:// prefix if present
-        SOURCE_IMAGE=${{ inputs.source-image }}
-        if [[ "${{ inputs.source-image }}" == oci-archive:* ]]; then
-          SOURCE_IMAGE=${{ inputs.source-image }}
-          SOURCE_IMAGE=${SOURCE_IMAGE#oci-archive:}
-        fi
-
-        # Import from OCI archive to workspace
-        regctl image import \
+        # Download from registry to workspace
+        regctl image copy \
+          ${{ inputs.source-image }}:${{ inputs.source-tag }} \
           ocidir://workspace:${{ inputs.source-tag }} \
-          ${SOURCE_IMAGE}
-
-        # # Download from registry to workspace
-        # regctl image copy \
-        #   ${{ inputs.source-image }}:${{ inputs.source-tag }} \
-        #   ocidir://workspace:${{ inputs.source-tag }} \
-        #   --digest-tags \
-        #   --referrers
+          --digest-tags \
+          --referrers
 
     # Debug
     - name: Debug
       shell: bash
       run: |
         echo "OCI directory contents:"
-        ls -lhR "${{ startsWith(inputs.source-image, 'ocidir://') && inputs.source-image || 'ocidir://workspace' }}"
+        ls -lhR workspace
 
     # Enrich image metadata
     - name: Enrich ${{ inputs.source-image }}:${{ inputs.source-tag }} image metadata
