@@ -111,7 +111,6 @@ runs:
     - name: Debug
       shell: bash
       run: |
-        chmod - 744 workspace
         echo "OCI directory contents:"
         ls -lhR workspace
 
