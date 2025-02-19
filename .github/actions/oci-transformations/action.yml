@@ -94,11 +94,24 @@ runs:
           --digest-tags \
           --referrers
 
+    # Ensure the image is fully OCI compliant
+    - name: Ensure OCI compliance
+      shell: bash
+      run: |
+        IMAGE_PATH="${{ startsWith(inputs.source-image, 'ocidir://') && inputs.source-image || 'ocidir://workspace' }}"
+        # Always run regctl for OCI conversion, add annotations if any
+        regctl image mod \
+          ${IMAGE_PATH}:${{ inputs.source-tag }} \
+          --replace \
+          --to-oci \
+          --to-oci-referrers \
+          --label-to-annotation
+
     # Debug
     - name: Debug
       shell: bash
       run: |
-        chmod -R 744 workspace
+        chmod - 744 workspace
         echo "OCI directory contents:"
         ls -lhR workspace
 
@@ -108,18 +121,22 @@ runs:
       run: |
         IMAGE_PATH="${{ startsWith(inputs.source-image, 'ocidir://') && inputs.source-image || 'ocidir://workspace' }}"
 
-        # Process each platform-specific manifest
-        for digest in $(regctl image manifest ${IMAGE_PATH}:${{ inputs.source-tag }} -v error | yq -r '.Manifests | with_entries(select(.key | test("Digest"))) | to_entries | .[].value'); do
-          echo "Processing manifest $digest"
+        # Get platforms and their manifests
+        for platform in $(regctl image manifest ${IMAGE_PATH}:${{ inputs.source-tag }} -v error | yq -r '.manifests[].platform | "\(.os)/\(.architecture)"'); do
+          echo "Processing platform $platform"
+
+          # Get current manifest digest for this platform
+          digest=$(regctl image manifest ${IMAGE_PATH}:${{ inputs.source-tag }} --platform ${platform} | yq -r '.digest')
+          echo "Platform manifest digest: $digest"
 
           # Get current annotations from platform manifest
           CURRENT_ANNOTATIONS=$(regctl blob get ${IMAGE_PATH}:${{ inputs.source-tag }} ${digest} -v error | yq -r '.annotations // {}')
-          echo "CURRENT_ANNOTATIONS: $CURRENT_ANNOTATIONS"
+          echo "Current annotations: $CURRENT_ANNOTATIONS"
 
-          # Build annotation arguments
+          # Build annotation arguments only for missing annotations
           ANNOTATION_ARGS=""
 
-          # Required annotations
+          # Required annotations - only add if missing
           if ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.created"]' >/dev/null; then
             ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=\"[*]org.opencontainers.image.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ")\""
           fi
@@ -128,7 +145,7 @@ runs:
             ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=\"[*]org.opencontainers.image.title=${{ inputs.image-title }}\""
           fi
 
-          # Optional annotations
+          # Optional annotations - only add if provided and missing
           if [ -n "${{ inputs.image-authors }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.authors"]' >/dev/null; then
             ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=\"[*]org.opencontainers.image.authors=${{ inputs.image-authors }}\""
           fi
@@ -148,16 +165,15 @@ runs:
           if [ -n "${{ inputs.image-version }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.version"]' >/dev/null; then
             ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=\"[*]org.opencontainers.image.version=${{ inputs.image-version }}\""
           fi
-          echo "ANNOTATION_ARGS: $ANNOTATION_ARGS"
 
-          # Always run regctl for OCI conversion, add annotations if any
-          regctl image mod \
-            ${IMAGE_PATH}:${{ inputs.source-tag }} \
-            --replace \
-            --to-oci \
-            --to-oci-referrers \
-            --label-to-annotation
-            # "${ANNOTATION_ARGS}"
+          echo "Annotation arguments for $platform: $ANNOTATION_ARGS"
+
+          # Only modify if we have annotations to add
+          if [ ! -z "$ANNOTATION_ARGS" ]; then
+            regctl image mod \
+              ${IMAGE_PATH}@${digest} \
+              ${ANNOTATION_ARGS}
+          fi
         done
 
     # Show image metadata if requested
