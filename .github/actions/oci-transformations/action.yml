@@ -111,7 +111,7 @@ runs:
       shell: bash
       run: |
         echo "OCI directory contents:"
-        ls -lhR ${IMAGE_PATH}
+        ls -lhR "${{ startsWith(inputs.source-image, 'ocidir://') && inputs.source-image || 'ocidir://workspace' }}"
 
     # Enrich image metadata
     - name: Enrich ${{ inputs.source-image }}:${{ inputs.source-tag }} image metadata
