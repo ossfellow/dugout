@@ -106,6 +106,13 @@ runs:
         #   --digest-tags \
         #   --referrers
 
+    # Debug
+    - name: Debug
+      shell: bash
+      run: |
+        echo "OCI directory contents:"
+        ls lhR ${IMAGE_PATH}
+
     # Enrich image metadata
     - name: Enrich ${{ inputs.source-image }}:${{ inputs.source-tag }} image metadata
       shell: bash
@@ -163,13 +170,6 @@ runs:
             --label-to-annotation
             # "${ANNOTATION_ARGS}"
         done
-
-    # Debug
-    - name: Debug
-      shell: bash
-      run: |
-        echo "OCI directory contents:"
-        ls lhR ${IMAGE_PATH}:${{ inputs.source-tag }}
 
     # Show image metadata if requested
     - name: Show ${{ inputs.source-image }}:${{ inputs.source-tag }} image enriched metadata
