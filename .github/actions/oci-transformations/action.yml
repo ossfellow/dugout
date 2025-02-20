@@ -229,7 +229,7 @@ runs:
             # Base image
             regctl image copy \
               ${IMAGE_PATH}:${{ inputs.source-tag }} \
-              ${registry}/${{ github.repository_owner }}/${{ github.repository }}/${{ inputs.image-title }}:${{ inputs.source-tag }} \
+              ${registry}/${{ github.repository }}/${{ inputs.image-title }}:${{ inputs.source-tag }} \
               --digest-tags \
               --referrers
 
@@ -240,7 +240,7 @@ runs:
                 echo $variant | jq -r '.tags[]' | while read -r tag; do
                   regctl image copy \
                     ${IMAGE_PATH}:${{ inputs.source-tag }} \
-                    ${registry}/${{ github.repository_owner }}/${{ github.repository }}/${{ inputs.image-title }}:${tag} \
+                    ${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag} \
                     --digest-tags \
                     --referrers
                 done
@@ -253,7 +253,7 @@ runs:
                 if [ ! -z "$tag" ]; then
                   regctl image copy \
                     ${IMAGE_PATH}:${{ inputs.source-tag }} \
-                    ${registry}/${{ github.repository_owner }}/${{ github.repository }}/${{ inputs.image-title }}:${tag} \
+                    ${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag} \
                     --digest-tags \
                     --referrers
                 fi
