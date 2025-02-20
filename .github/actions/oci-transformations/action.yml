@@ -83,7 +83,7 @@ runs:
         if [ -n "${{ inputs.registry-credentials }}" ]; then
           echo "${{ inputs.registry-credentials }}" | jq -r '.[] | "\(.url) \(.username) \(.password)"' | while read url username password; do
             echo "Logging in to $url"
-            echo "$password" | regctl registry login -u "$username" --pass-stdin "$url"
+            echo "$password" | regctl registry login -u "$username" --pass-stdin "$url" -v error
           done
         fi
 
@@ -92,7 +92,8 @@ runs:
           ${{ inputs.source-image }}:${{ inputs.source-tag }} \
           ocidir://workspace:${{ inputs.source-tag }} \
           --digest-tags \
-          --referrers
+          --referrers \
+          -v error
 
     # Ensure the image is fully OCI compliant
     - name: Ensure OCI compliance
@@ -105,7 +106,8 @@ runs:
           --replace \
           --to-oci \
           --to-oci-referrers \
-          --label-to-annotation
+          --label-to-annotation \
+          -v error
 
     # Debug
     - name: Debug
@@ -121,11 +123,11 @@ runs:
         IMAGE_PATH="${{ startsWith(inputs.source-image, 'ocidir://') && inputs.source-image || 'ocidir://workspace' }}"
 
         # Get platforms and their manifests
-        for platform in $(regctl image manifest ${IMAGE_PATH}:${{ inputs.source-tag }} -v error | yq -r '.manifests[].platform | "\(.os)/\(.architecture)"'); do
+        for platform in $(regctl image manifest ${IMAGE_PATH}:${{ inputs.source-tag }} -v error | yq -r '.Manifests | with_entries(select(.key | test("Platform"))) | to_entries | .[].value'); do
           echo "Processing platform $platform"
 
           # Get current manifest digest for this platform
-          digest=$(regctl image manifest ${IMAGE_PATH}:${{ inputs.source-tag }} --platform ${platform} | yq -r '.digest')
+          digest=$(regctl image manifest ${IMAGE_PATH}:${{ inputs.source-tag }} --platform ${platform} -v error | yq -r '.Digest')
           echo "Platform manifest digest: $digest"
 
           # Get current annotations from platform manifest
@@ -133,45 +135,46 @@ runs:
           echo "Current annotations: $CURRENT_ANNOTATIONS"
 
           # Build annotation arguments only for missing annotations
-          ANNOTATION_ARGS=""
+          declare -a ANNOTATION_ARGS=()
 
           # Required annotations - only add if missing
           if ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.created"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=\"[*]org.opencontainers.image.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ")\""
+            ANNOTATION_ARGS+=("--annotation=[*]org.opencontainers.image.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ")")
           fi
 
           if ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.title"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=\"[*]org.opencontainers.image.title=${{ inputs.image-title }}\""
+            ANNOTATION_ARGS+=("--annotation=[*]org.opencontainers.image.title=\"${{ inputs.image-title }}\"")
           fi
 
           # Optional annotations - only add if provided and missing
           if [ -n "${{ inputs.image-authors }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.authors"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=\"[*]org.opencontainers.image.authors=${{ inputs.image-authors }}\""
+            ANNOTATION_ARGS+=("--annotation=[*]org.opencontainers.image.authors=\"${{ inputs.image-authors }}\"")
           fi
 
           if [ -n "${{ inputs.vendor }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.vendor"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=\"[*]org.opencontainers.image.vendor=${{ inputs.vendor }}\""
+            ANNOTATION_ARGS+=("--annotation=[*]org.opencontainers.image.vendor=\"${{ inputs.vendor }}\"")
           fi
 
           if [ -n "${{ inputs.source-repository }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.source"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=\"[*]org.opencontainers.image.source=${{ inputs.source-repository }}\""
+            ANNOTATION_ARGS+=("--annotation=[*]org.opencontainers.image.source=\"${{ inputs.source-repository }}\"")
           fi
 
           if [ -n "${{ inputs.image-description }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.description"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=\"[*]org.opencontainers.image.description=${{ inputs.image-description }}\""
+            ANNOTATION_ARGS+=("--annotation=[*]org.opencontainers.image.description=\"${{ inputs.image-description }}\"")
           fi
 
           if [ -n "${{ inputs.image-version }}" ] && ! echo "$CURRENT_ANNOTATIONS" | jq -e '.["org.opencontainers.image.version"]' >/dev/null; then
-            ANNOTATION_ARGS="$ANNOTATION_ARGS --annotation=\"[*]org.opencontainers.image.version=${{ inputs.image-version }}\""
+            ANNOTATION_ARGS+=("--annotation=[*]org.opencontainers.image.version=\"${{ inputs.image-version }}\"")
           fi
 
-          echo "Annotation arguments for $platform: $ANNOTATION_ARGS"
+          echo "Annotation arguments for $platform: ${ANNOTATION_ARGS[@]}"
 
           # Only modify if we have annotations to add
-          if [ ! -z "$ANNOTATION_ARGS" ]; then
+          if [[ "${#ANNOTATION_ARGS[@]}" -gt 0 ]]; then
             regctl image mod \
               ${IMAGE_PATH}@${digest} \
-              ${ANNOTATION_ARGS}
+              "${ANNOTATION_ARGS[@]}" \
+              -v error
           fi
         done
 
