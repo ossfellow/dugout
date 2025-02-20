@@ -75,6 +75,9 @@ runs:
           cp -r "${source_image}"/* workspace/
         fi
         # Set the owner of the image
+        echo "owner1=${GITHUB_REPOSITORY_OWNER,,}"
+        echo "owner2=${{ github.repository_owner }}"
+        echo "image_title=${{ inputs.image-title }}"
         echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
 
     # Download from registry if not an OCI directory or archive
