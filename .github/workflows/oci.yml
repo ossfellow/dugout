@@ -128,7 +128,7 @@ jobs:
           image-version: ${{ steps.ctx.outputs.version }}
           image-authors: "automation@wasmcloud.com"
           target-registries: |
-            ghcr.io/${{ github.repository }}/${{ steps.ctx.outputs.owner }}
+            ghcr.io
           image-variants: |
             [
               {
