@@ -110,13 +110,6 @@ runs:
           --label-to-annotation \
           -v error
 
-    # Debug
-    - name: Debug
-      shell: bash
-      run: |
-        echo "OCI directory contents:"
-        ls -lhR workspace
-
     # Enrich image metadata
     - name: Enrich ${{ inputs.source-image }}:${{ inputs.source-tag }} image metadata
       shell: bash
@@ -236,7 +229,7 @@ runs:
             # Base image
             regctl image copy \
               ${IMAGE_PATH}:${{ inputs.source-tag }} \
-              ${registry}/${{ github.repository_owner }}/${{ inputs.image-title }}:${{ inputs.source-tag }} \
+              ${registry}/${{ github.repository_owner }}/${{ github.repository }}/${{ inputs.image-title }}:${{ inputs.source-tag }} \
               --digest-tags \
               --referrers
 
@@ -247,7 +240,7 @@ runs:
                 echo $variant | jq -r '.tags[]' | while read -r tag; do
                   regctl image copy \
                     ${IMAGE_PATH}:${{ inputs.source-tag }} \
-                    ${registry}/${{ github.repository_owner }}/${{ inputs.image-title }}:${tag} \
+                    ${registry}/${{ github.repository_owner }}/${{ github.repository }}/${{ inputs.image-title }}:${tag} \
                     --digest-tags \
                     --referrers
                 done
@@ -260,7 +253,7 @@ runs:
                 if [ ! -z "$tag" ]; then
                   regctl image copy \
                     ${IMAGE_PATH}:${{ inputs.source-tag }} \
-                    ${registry}/${{ github.repository_owner }}/${{ inputs.image-title }}:${tag} \
+                    ${registry}/${{ github.repository_owner }}/${{ github.repository }}/${{ inputs.image-title }}:${tag} \
                     --digest-tags \
                     --referrers
                 fi
