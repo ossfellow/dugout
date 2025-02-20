@@ -57,6 +57,7 @@ runs:
 
     # Process input image based on source type
     - name: Process OCI input
+      id: process-oci-input
       shell: bash
       run: |
         mkdir -p workspace
@@ -73,6 +74,8 @@ runs:
           # Just copy the directory contents
           cp -r "${source_image}"/* workspace/
         fi
+        # Set the owner of the image
+        echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
 
     # Download from registry if not an OCI directory or archive
     - name: Download ${{ inputs.source-image }}:${{ inputs.source-tag }} from registry
@@ -235,7 +238,7 @@ runs:
             # Base image
             regctl image copy \
               ${IMAGE_PATH}:${{ inputs.source-tag }} \
-              ${registry}/${{ inputs.source-image }}:${{ inputs.source-tag }} \
+              ${registry}/${{ steps.process-oci-input.outputs.owner }}/${{ inputs.image-title }}:${{ inputs.source-tag }} \
               --digest-tags \
               --referrers
 
@@ -246,7 +249,7 @@ runs:
                 echo $variant | jq -r '.tags[]' | while read -r tag; do
                   regctl image copy \
                     ${IMAGE_PATH}:${{ inputs.source-tag }} \
-                    ${registry}/${{ inputs.source-image }}:${tag} \
+                    ${registry}/${{ steps.process-oci-input.outputs.owner }}/${{ inputs.image-title }}:${tag} \
                     --digest-tags \
                     --referrers
                 done
@@ -259,7 +262,7 @@ runs:
                 if [ ! -z "$tag" ]; then
                   regctl image copy \
                     ${IMAGE_PATH}:${{ inputs.source-tag }} \
-                    ${registry}/${{ inputs.source-image }}:${tag} \
+                    ${registry}/${{ steps.process-oci-input.outputs.owner }}/${{ inputs.image-title }}:${tag} \
                     --digest-tags \
                     --referrers
                 fi
