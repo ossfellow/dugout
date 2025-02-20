@@ -36,16 +36,15 @@ jobs:
         with:
           script: |
             // Delete packages
-            const packages = await github.rest.packages.listPackagesForOrganization({
-              org: context.repo.owner,
+            const packages = await github.rest.packages.listPackagesForAuthenticatedUser({
+              // org: context.repo.owner,
               package_type: 'container'
             });
 
             for (const pkg of packages.data) {
               if (pkg.repository?.name === context.repo.repo) {
                 console.log(`Deleting package ${pkg.name}`);
-                await github.rest.packages.deletePackageForOrg({
-                  org: context.repo.owner,
+                await github.rest.packages.deletePackageForAuthenticatedUser({
                   package_type: 'container',
                   package_name: pkg.name
                 });
