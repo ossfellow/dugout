@@ -226,6 +226,7 @@ runs:
         # Push each variant to each registry with each tag
         echo "${{ inputs.target-registries }}" | while read registry; do
           if [ ! -z "$registry" ]; then
+            echo "Pushing to $registry"
             # Base image
             regctl image copy \
               ${IMAGE_PATH}:${{ inputs.source-tag }} \
