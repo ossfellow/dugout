@@ -235,7 +235,7 @@ runs:
               --referrers
 
             echo "=== Image Variants ==="
-            echo "${{ inputs.image-variants }}" | yq -P
+            echo "${{ inputs.image-variants }}" | jq '.'
             echo "=== End of Image Variants ==="
 
             # Variants if specified
@@ -243,11 +243,12 @@ runs:
               echo "${{ inputs.image-variants }}" | jq -c '.[]' | while read -r variant; do
                 name=$(echo $variant | jq -r '.name')
                 echo $variant | jq -r '.tags[]' | while read -r tag; do
-                  regctl image copy \
-                    ${IMAGE_PATH}:${{ inputs.source-tag }} \
-                    ${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag} \
-                    --digest-tags \
-                    --referrers
+                  echo "Pushing ONE ${IMAGE_PATH}:${{ inputs.source-tag }} to ${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag}"
+                  # regctl image copy \
+                  #   ${IMAGE_PATH}:${{ inputs.source-tag }} \
+                  #   ${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag} \
+                  #   --digest-tags \
+                  #   --referrers
                 done
               done
             fi
@@ -256,11 +257,12 @@ runs:
             if [ ! -z "${{ inputs.default-tags }}" ]; then
               echo "${{ inputs.default-tags }}" | while read tag; do
                 if [ ! -z "$tag" ]; then
-                  regctl image copy \
-                    ${IMAGE_PATH}:${{ inputs.source-tag }} \
-                    ${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag} \
-                    --digest-tags \
-                    --referrers
+                  echo "Pushing MORE ${IMAGE_PATH}:${{ inputs.source-tag }} to ${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag}"
+                  # regctl image copy \
+                  #   ${IMAGE_PATH}:${{ inputs.source-tag }} \
+                  #   ${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag} \
+                  #   --digest-tags \
+                  #   --referrers
                 fi
               done
             fi
