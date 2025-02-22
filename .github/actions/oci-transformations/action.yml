@@ -204,7 +204,8 @@ runs:
 
         # Login to registries if credentials provided
         if [ ! -z "${{ inputs.registry-credentials }}" ]; then
-          echo "${{ inputs.registry-credentials }}" | jq -r '.[] | "\(.url) \(.username) \(.password)"' | while read url username password; do
+          # echo "${{ inputs.registry-credentials }}" | jq -r '.[] | "\(.url) \(.username) \(.password)"' | while read url username password; do
+          echo "${{ inputs.registry-credentials }}" | yq -r '.[] | "(.url, .username, .password)"' | while read url username password; do
             # Handle different registry types
             case "$url" in
               "docker.io"|"registry-1.docker.io")
@@ -240,7 +241,7 @@ runs:
 
             # Variants if specified
             if [ ! -z "${{ inputs.image-variants }}" ]; then
-              echo "${{ inputs.image-variants }}" | yq -pj '.[]' | while read -r variant; do
+              echo "${{ inputs.image-variants }}" | yq -oj '.[]' | while read -r variant; do
                 name=$(echo $variant | yq -r '.name')
                 echo $variant | yq -r '.tags[]' | while read -r tag; do
                   echo "Pushing ONE ${IMAGE_PATH}:${{ inputs.source-tag }} to ${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag}"
