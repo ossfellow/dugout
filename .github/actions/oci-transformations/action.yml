@@ -235,7 +235,7 @@ runs:
               --referrers
 
             echo "=== Image Variants ==="
-            echo "${{ inputs.image-variants }}" | yq '.'
+            echo "${{ inputs.image-variants }}" | yq -r '.[]'
             echo "=== End of Image Variants ==="
 
             # Variants if specified
@@ -252,6 +252,10 @@ runs:
                 done
               done
             fi
+
+            echo "=== Default Tags ==="
+            echo "${{ inputs.default-tags }}"
+            echo "=== End of Default Tags ==="
 
             # Additional tags if specified
             if [ ! -z "${{ inputs.default-tags }}" ]; then
