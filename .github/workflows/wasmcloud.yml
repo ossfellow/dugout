@@ -287,7 +287,7 @@ jobs:
       prefix: ''
 
   release-wasmcloud:
-    if: startsWith(github.ref, 'refs/tags/v')
+    # if: startsWith(github.ref, 'refs/tags/v')
     needs:
       - build-wasmcloud-bin
       - oci-wasmcloud
@@ -391,7 +391,7 @@ jobs:
             | jq -r '.body' >> release-notes.md
 
   release-wash-cli:
-    if: startsWith(github.ref, 'refs/tags/wash-cli-v')
+    # if: startsWith(github.ref, 'refs/tags/wash-cli-v')
     needs:
       - build-wash-bin
       - oci-wash
