@@ -30,41 +30,36 @@ jobs:
       packages: write # For deleting packages
       contents: write # For deleting releases
     steps:
-      - name: Delete existing packages and releases
-        continue-on-error: true # Don't fail if nothing to clean
-        uses: actions/github-script@v7
-        with:
-          script: |
-            // Delete packages
-            const packages = await github.rest.packages.listPackagesForAuthenticatedUser({
-              // org: context.repo.owner,
-              package_type: 'container'
-            });
+      - name: Delete packages
+        continue-on-error: false # Don't fail if nothing to clean
+        run: |
+          # List packages for the authenticated user
+          packages=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/user/packages?package_type=container")
 
-            for (const pkg of packages.data) {
-              if (pkg.repository?.name === context.repo.repo) {
-                console.log(`Deleting package ${pkg.name}`);
-                await github.rest.packages.deletePackageForAuthenticatedUser({
-                  package_type: 'container',
-                  package_name: pkg.name
-                });
-              }
-            }
+          # Iterate over each package and delete if it matches the repository name
+          for pkg in $(echo "$packages" | jq -r '.[] | select(.repository.name == "'${{ github.repository }}"') | .name'); do
+            echo "Deleting package $pkg"
+            curl -X DELETE -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/user/packages/container/$pkg"
+          done
+      - name: Delete releases
+        continue-on-error: false # Don't fail if nothing to clean
+        run: |
+          # List releases for the repository
+          releases=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases")
 
-            // Delete releases
-            const releases = await github.rest.repos.listReleases({
-              owner: context.repo.owner,
-              repo: context.repo.repo
-            });
-
-            for (const release of releases.data) {
-              console.log(`Deleting release ${release.tag_name}`);
-              await github.rest.repos.deleteRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                release_id: release.id
-              });
-            }
+          # Iterate over each release and delete
+          for release_id in $(echo "$releases" | jq -r '.[].id'); do
+            echo "Deleting release with ID $release_id"
+            curl -X DELETE -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/$release_id"
+          done
 
   bootstrap:
     needs: cleanup # Make sure cleanup runs first
