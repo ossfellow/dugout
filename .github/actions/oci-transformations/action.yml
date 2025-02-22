@@ -235,14 +235,14 @@ runs:
               --referrers
 
             echo "=== Image Variants ==="
-            echo "${{ inputs.image-variants }}" | jq '.'
+            echo "${{ inputs.image-variants }}" | yq '.'
             echo "=== End of Image Variants ==="
 
             # Variants if specified
             if [ ! -z "${{ inputs.image-variants }}" ]; then
-              echo "${{ inputs.image-variants }}" | jq -c '.[]' | while read -r variant; do
-                name=$(echo $variant | jq -r '.name')
-                echo $variant | jq -r '.tags[]' | while read -r tag; do
+              echo "${{ inputs.image-variants }}" | yq -pj '.[]' | while read -r variant; do
+                name=$(echo $variant | yq -r '.name')
+                echo $variant | yq -r '.tags[]' | while read -r tag; do
                   echo "Pushing ONE ${IMAGE_PATH}:${{ inputs.source-tag }} to ${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag}"
                   # regctl image copy \
                   #   ${IMAGE_PATH}:${{ inputs.source-tag }} \
