@@ -34,11 +34,9 @@ jobs:
         continue-on-error: false # Don't fail if nothing to clean
         run: |
           # List packages for the authenticated user
-
           curl -L \
             -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ github.token }}" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/user/packages?package_type=container"
           packages=$(curl -v -L \
             -H "Accept: application/vnd.github+json" \
