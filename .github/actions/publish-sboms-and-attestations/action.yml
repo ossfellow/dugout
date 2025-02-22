@@ -142,6 +142,8 @@ runs:
           echo "$password" | regctl registry login -u "$username" --pass-stdin "$url"
         done
 
+        regctl image manifest ocidir://${{ inputs.subject-name }}-provenance:${{ inputs.release-version }} -v error | yq -P
+
         # Push the artifact
         regctl image copy \
           ocidir://${{ inputs.subject-name }}-provenance:${{ inputs.release-version }} \
