@@ -39,12 +39,13 @@ jobs:
             "https://api.github.com/user/packages?package_type=container")
 
           # Iterate over each package and delete if it matches the repository name
-          for pkg in $(echo "$packages" | jq -r '.[] | select(.repository.name == "'${{ github.repository }}"') | .name'); do
+          for pkg in $(echo "$packages" | jq -r '.[] | select(.repository.name == "'${{ github.repository }}'") | .name'); do
             echo "Deleting package $pkg"
             curl -X DELETE -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               -H "Accept: application/vnd.github+json" \
               "https://api.github.com/user/packages/container/$pkg"
           done
+
       - name: Delete releases
         continue-on-error: false # Don't fail if nothing to clean
         run: |
