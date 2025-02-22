@@ -30,29 +30,27 @@ jobs:
       packages: write # For deleting packages
       contents: write # For deleting releases
     steps:
-      - name: Print packages JSON
-        run: |
-          # Fetch and print the packages JSON for debugging
-          curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/user/packages?package_type=container" | jq '.'
-
       - name: Delete packages
         continue-on-error: false # Don't fail if nothing to clean
         run: |
           # List packages for the authenticated user
-          packages=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          packages=$(curl -s -L \
             -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/user/packages?package_type=container")
 
           # Debug: Print the packages JSON
-          echo "$packages" | jq .
+          echo "$packages" | yq -P
 
           # Iterate over each package and delete if it matches the repository name
-          for pkg in $(echo "$packages" | jq -r '.[] | select(.repository.name == "'${{ github.repository }}'") | .name'); do
+          for pkg in $(echo "$packages" | jq -r '.[] | .name'); do
             echo "Deleting package $pkg"
-            curl -X DELETE -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            curl -s -L \
+              -X DELETE \
               -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
               "https://api.github.com/user/packages/container/$pkg"
           done
 
@@ -60,15 +58,23 @@ jobs:
         continue-on-error: false # Don't fail if nothing to clean
         run: |
           # List releases for the repository
-          releases=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          releases=$(curl -s -L \
             -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/${{ github.repository }}/releases")
+
+          # Debug: Print the releases JSON
+          echo "$releases" | yq -P
 
           # Iterate over each release and delete
           for release_id in $(echo "$releases" | jq -r '.[].id'); do
             echo "Deleting release with ID $release_id"
-            curl -X DELETE -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            curl -s -L \
+              -X DELETE \
               -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
               "https://api.github.com/repos/${{ github.repository }}/releases/$release_id"
           done
 
