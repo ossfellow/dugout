@@ -132,8 +132,8 @@ jobs:
           image-variants: |
             [
               {
-                "name": "wolfi",
-                "tags": ["${{ steps.ctx.outputs.version }}-wolfi"]
+                \"name\": \"wolfi\",
+                \"tags\": [\"${{ steps.ctx.outputs.version }}-wolfi\"]
               }
             ]
           registry-credentials: |
