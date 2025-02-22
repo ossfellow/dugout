@@ -234,6 +234,10 @@ runs:
               --digest-tags \
               --referrers
 
+            echo "=== Image Variants ==="
+            echo "${{ inputs.image-variants }}" | yq -P
+            echo "=== End of Image Variants ==="
+
             # Variants if specified
             if [ ! -z "${{ inputs.image-variants }}" ]; then
               echo "${{ inputs.image-variants }}" | jq -c '.[]' | while read -r variant; do
