@@ -204,8 +204,7 @@ runs:
 
         # Login to registries if credentials provided
         if [ ! -z "${{ inputs.registry-credentials }}" ]; then
-          # echo "${{ inputs.registry-credentials }}" | jq -r '.[] | "\(.url) \(.username) \(.password)"' | while read url username password; do
-          echo "${{ inputs.registry-credentials }}" | yq -r '.[] | "(.url, .username, .password)"' | while read url username password; do
+          echo "${{ inputs.registry-credentials }}" | jq -r '.[] | "\(.url) \(.username) \(.password)"' | while read url username password; do
             # Handle different registry types
             case "$url" in
               "docker.io"|"registry-1.docker.io")
