@@ -58,7 +58,7 @@ jobs:
         continue-on-error: false # Don't fail if nothing to clean
         run: |
           # List releases for the repository
-          releases=$(curl -L \
+          releases=$(curl -v -L \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
@@ -70,7 +70,7 @@ jobs:
           # Iterate over each release and delete
           for release_id in $(echo "$releases" | jq -r '.[].id'); do
             echo "Deleting release with ID $release_id"
-            curl -L \
+            curl -v -L \
               -X DELETE \
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
