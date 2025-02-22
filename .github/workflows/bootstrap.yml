@@ -37,7 +37,7 @@ jobs:
 
           curl -L \
             -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: Bearer ${{ github.token }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/user/packages?package_type=container"
           packages=$(curl -v -L \
@@ -88,41 +88,41 @@ jobs:
           #     "https://api.github.com/repos/${{ github.repository }}/releases/$release_id"
           # done
 
-  bootstrap:
-    needs: cleanup # Make sure cleanup runs first
-    runs-on: ubuntu-22.04
-    steps:
-      # Only checkout dugout repository
-      - name: Checkout dugout repository
-        uses: actions/checkout@v4
-        with:
-          path: dugout
+  # bootstrap:
+  #   needs: cleanup # Make sure cleanup runs first
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #     # Only checkout dugout repository
+  #     - name: Checkout dugout repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         path: dugout
 
-      # Use the tugboat action to setup test environment
-      - uses: ossfellow/.github/actions/tugboat@main
-        with:
-          target-repo: ${{ inputs.target-repo }}
-          github-assets: ${{ inputs.github-assets }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+  #     # Use the tugboat action to setup test environment
+  #     - uses: ossfellow/.github/actions/tugboat@main
+  #       with:
+  #         target-repo: ${{ inputs.target-repo }}
+  #         github-assets: ${{ inputs.github-assets }}
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Debug step to verify setup
-      - name: Verify test environment setup
-        run: |
-          echo "=== Current directory structure ==="
-          ls -la
-          echo
-          echo "=== .github directory structure ==="
-          find .github -type f | sort
-          echo "=== End of listing ==="
+  #     # Debug step to verify setup
+  #     - name: Verify test environment setup
+  #       run: |
+  #         echo "=== Current directory structure ==="
+  #         ls -la
+  #         echo
+  #         echo "=== .github directory structure ==="
+  #         find .github -type f | sort
+  #         echo "=== End of listing ==="
 
-      # Trigger test workflow
-      - name: Trigger test workflow
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: '${{ inputs.test-workflow }}.yml',
-              ref: context.ref
-            })
+  #     # Trigger test workflow
+  #     - name: Trigger test workflow
+  #       uses: actions/github-script@v7
+  #       with:
+  #         script: |
+  #           await github.rest.actions.createWorkflowDispatch({
+  #             owner: context.repo.owner,
+  #             repo: context.repo.repo,
+  #             workflow_id: '${{ inputs.test-workflow }}.yml',
+  #             ref: context.ref
+  #           })
