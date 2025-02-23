@@ -41,6 +41,7 @@ runs:
     - name: Setup attestations-and-sboms directory
       shell: bash
       run: |
+        echo "Setting up attestations-and-sboms directory"
         mkdir -p ${{ github.workspace }}/attestations-and-sboms
         echo "PROVENANCE_ARTIFACTS_DIR=${{ github.workspace }}/attestations-and-sboms" >> $GITHUB_ENV
 
@@ -102,6 +103,7 @@ runs:
     - name: Capture attestation metadata
       shell: bash
       run: |
+        echo "Capturing attestation metadata"
         # Get attestation outputs based on type
         if [[ "${{ inputs.artifact-type }}" == "sbom" ]]; then
           ATTESTATION_ID="${{ steps.attest-sbom.outputs.attestation-id }}"

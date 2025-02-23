@@ -60,6 +60,7 @@ runs:
       id: process-oci-input
       shell: bash
       run: |
+        echo "Processing OCI input"
         mkdir -p workspace
         if [[ "${{ inputs.source-image }}" == oci-archive:* ]]; then
           source_image=${{ inputs.source-image }}
@@ -80,6 +81,7 @@ runs:
       if: ${{ !startsWith(inputs.source-image, 'ocidir://') && !startsWith(inputs.source-image, 'oci-archive:') }}
       shell: bash
       run: |
+        echo "Downloading ${{ inputs.source-image }}:${{ inputs.source-tag }} from registry"
         # Login to registry if credentials provided
         if [ -n "${{ inputs.registry-credentials }}" ]; then
           echo "${{ inputs.registry-credentials }}" | jq -r '.[] | "\(.url) \(.username) \(.password)"' | while read url username password; do
@@ -100,6 +102,7 @@ runs:
     - name: Ensure OCI compliance
       shell: bash
       run: |
+        echo "Ensuring OCI compliance for ${{ inputs.source-image }}:${{ inputs.source-tag }}"
         IMAGE_PATH="${{ startsWith(inputs.source-image, 'ocidir://') && inputs.source-image || 'ocidir://workspace' }}"
         # Always run regctl for OCI conversion, add annotations if any
         regctl image mod \
@@ -114,6 +117,7 @@ runs:
     - name: Enrich ${{ inputs.source-image }}:${{ inputs.source-tag }} image metadata
       shell: bash
       run: |
+        echo "Enriching ${{ inputs.source-image }}:${{ inputs.source-tag }} image metadata"
         IMAGE_PATH="${{ startsWith(inputs.source-image, 'ocidir://') && inputs.source-image || 'ocidir://workspace' }}"
 
         # Get platforms and their manifests
@@ -122,11 +126,11 @@ runs:
 
           # Get current manifest digest for this platform
           digest=$(regctl image manifest ${IMAGE_PATH}:${{ inputs.source-tag }} --platform ${platform} -v error | yq -r '.Digest')
-          echo "Platform manifest digest: $digest"
+          # echo "Platform manifest digest: $digest"
 
           # Get current annotations from platform manifest
           CURRENT_ANNOTATIONS=$(regctl blob get ${IMAGE_PATH}:${{ inputs.source-tag }} ${digest} -v error | yq -r '.annotations // {}')
-          echo "Current annotations: $CURRENT_ANNOTATIONS"
+          # echo "Current annotations: $CURRENT_ANNOTATIONS"
 
           # Build annotation arguments only for missing annotations
           declare -a ANNOTATION_ARGS=()
@@ -161,7 +165,7 @@ runs:
             ANNOTATION_ARGS+=("--annotation=[*]org.opencontainers.image.version=\"${{ inputs.image-version }}\"")
           fi
 
-          echo "Annotation arguments for $platform: ${ANNOTATION_ARGS[@]}"
+          echo "New annotations for $platform: ${ANNOTATION_ARGS[@]}"
 
           # Only modify if we have annotations to add
           if [[ "${#ANNOTATION_ARGS[@]}" -gt 0 ]]; then
@@ -177,6 +181,7 @@ runs:
       if: inputs.show-metadata == 'true'
       shell: bash
       run: |
+        echo "Showing ${{ inputs.source-image }}:${{ inputs.source-tag }} image enriched metadata"
         IMAGE_PATH="${{ startsWith(inputs.source-image, 'ocidir://') && inputs.source-image || 'ocidir://workspace' }}"
 
         echo "=== OCI Image Index (Multi-platform Manifest) ==="
@@ -200,6 +205,7 @@ runs:
       if: inputs.target-registries
       shell: bash
       run: |
+        echo "Pushing ${{ inputs.source-image }}:${{ inputs.source-tag }} to target registries"
         IMAGE_PATH="${{ startsWith(inputs.source-image, 'ocidir://') && inputs.source-image || 'ocidir://workspace' }}"
 
         # Login to registries if credentials provided

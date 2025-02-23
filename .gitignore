@@ -26,3 +26,4 @@ snippets.yml
 .github/workflows/attestation-test.yml
 .github/workflows/old-wasmcloud.yml
 github-run.log
+README-backup.md

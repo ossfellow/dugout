@@ -357,6 +357,7 @@ jobs:
           generate_release_notes: true
           body_path: release-notes.md
           files: ./wasmcloud/*
+          tag_name: ${{ env.WASMCLOUD_TEST_VERSION }}
 
       # Generate release notes with SBOM/attestation info
       - name: Generate Release Notes
@@ -460,7 +461,7 @@ jobs:
           generate_release_notes: true
           body_path: release-notes.md
           files: ./wash/*
-
+          tag_name: ${{ env.WASH_TEST_VERSION }}
       # Generate release notes with SBOM/attestation info
       - name: Generate Release Notes
         if: ${{ env.RUN_PUBLISH_SBOMS_AND_ATTESTATIONS }}

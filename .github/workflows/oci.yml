@@ -127,6 +127,7 @@ jobs:
           image-description: "${{ inputs.bin == 'wasmcloud' && 'wasmCloud runtime (Wolfi)' || 'wash CLI tool (Wolfi)' }}"
           image-version: ${{ steps.ctx.outputs.version }}
           image-authors: "automation@wasmcloud.com"
+          show-metadata: true
           target-registries: |
             ghcr.io
           image-variants: |

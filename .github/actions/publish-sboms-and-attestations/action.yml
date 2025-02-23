@@ -46,6 +46,7 @@ runs:
     - name: Create provenance:${{ inputs.release-version }} OCI artifact image
       shell: bash
       run: |
+        echo "Creating provenance:${{ inputs.release-version }} OCI artifact image"
         # Create empty OCI directory
         regctl image create ocidir://${{ inputs.subject-name }}-provenance:${{ inputs.release-version }}
 
@@ -119,6 +120,7 @@ runs:
       if: inputs.show-metadata == 'true'
       shell: bash
       run: |
+        echo "Showing image metadata"
         IMAGE_PATH="ocidir://${{ inputs.subject-name }}-provenance:${{ inputs.release-version }}"
 
         echo "=== OCI Artifact Index ==="
@@ -136,6 +138,7 @@ runs:
       if: inputs.registry-credentials
       shell: bash
       run: |
+        echo "Pushing artifact to registry"
         # Login to registry
         echo "${{ inputs.registry-credentials }}" | jq -r '.[] | "\(.url) \(.username) \(.password)"' | while read url username password; do
           echo "Logging in to $url"

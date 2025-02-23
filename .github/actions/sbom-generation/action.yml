@@ -33,6 +33,7 @@ runs:
       if: inputs.language != 'rust' && inputs.language != 'go'
       shell: bash
       run: |
+        echo "Setting up Syft configuration"
         cat > .syft.yaml << 'EOF'
         output:
           - spdx-json
@@ -67,6 +68,7 @@ runs:
       if: inputs.language == 'rust'
       shell: bash
       run: |
+        echo "Generating ${{ inputs.subject-name }} Rust SBOM"
         if [ -n "${{ inputs.subject-name }}" ]; then
           cargo sbom \
             --cargo-package ${{ inputs.subject-name }} \
@@ -90,11 +92,12 @@ runs:
       if: inputs.language == 'go'
       shell: bash
       run: |
+        echo "Generating ${{ inputs.artifact-name }} Go SBOM"
         bom generate \
           --namespace "https://wasmcloud.com" \
           --name "${{ inputs.artifact-name }}" \
           --dirs "${{ inputs.subject-path }}" \
-          --format json
+          --format json \
           --output "${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json"
 
     # For other artifacts using Anchore's action
