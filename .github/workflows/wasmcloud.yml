@@ -352,7 +352,7 @@ jobs:
       # For wasmCloud releases
       - name: Publish wasmCloud release
         uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974
-        if: startsWith(github.ref, 'refs/tags/v')
+        # if: startsWith(github.ref, 'refs/tags/v')
         with:
           generate_release_notes: true
           body_path: release-notes.md
@@ -455,7 +455,7 @@ jobs:
       # For wash-cli releases
       - name: Publish wash-cli release
         uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974
-        if: startsWith(github.ref, 'refs/tags/wash-cli-v')
+        # if: startsWith(github.ref, 'refs/tags/wash-cli-v')
         with:
           generate_release_notes: true
           body_path: release-notes.md
