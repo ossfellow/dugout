@@ -349,17 +349,7 @@ jobs:
               }
             ]
 
-      # For wasmCloud releases
-      - name: Publish wasmCloud release
-        uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974
-        # if: startsWith(github.ref, 'refs/tags/v')
-        with:
-          generate_release_notes: true
-          body_path: release-notes.md
-          files: ./wasmcloud/*
-          tag_name: ${{ env.WASMCLOUD_TEST_VERSION }}
-
-      # Generate release notes with SBOM/attestation info
+      # Generate release notes with SBOM/attestation info, for wasmcloud releases
       - name: Generate Release Notes
         if: ${{ env.RUN_PUBLISH_SBOMS_AND_ATTESTATIONS }}
         shell: bash
@@ -389,8 +379,17 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/${{ github.repository }}/releases/generate-notes \
-            -d "{\"tag_name\": \"${GITHUB_REF#refs/tags/}\"}" \
-            | jq -r '.body' >> release-notes.md
+            -d "{\"tag_name\": \"${{ env.WASMCLOUD_TEST_VERSION }}\"}" \
+            | jq -r '.body' > release-notes.md
+
+      - name: Publish wasmCloud release
+        uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974
+        # if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          generate_release_notes: true
+          body_path: release-notes.md
+          files: ./wasmcloud/*
+          tag_name: ${{ env.WASMCLOUD_TEST_VERSION }}
 
   release-wash-cli:
     # if: startsWith(github.ref, 'refs/tags/wash-cli-v')
@@ -453,16 +452,7 @@ jobs:
               }
             ]
 
-      # For wash-cli releases
-      - name: Publish wash-cli release
-        uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974
-        # if: startsWith(github.ref, 'refs/tags/wash-cli-v')
-        with:
-          generate_release_notes: true
-          body_path: release-notes.md
-          files: ./wash/*
-          tag_name: ${{ env.WASH_TEST_VERSION }}
-      # Generate release notes with SBOM/attestation info
+      # Generate release notes with SBOM/attestation info, for wash-cli releases
       - name: Generate Release Notes
         if: ${{ env.RUN_PUBLISH_SBOMS_AND_ATTESTATIONS }}
         shell: bash
@@ -492,5 +482,14 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/${{ github.repository }}/releases/generate-notes \
-            -d "{\"tag_name\": \"${GITHUB_REF#refs/tags/}\"}" \
-            | jq -r '.body' >> release-notes.md
+            -d "{\"tag_name\": \"${{ env.WASH_TEST_VERSION }}\"}" \
+            | jq -r '.body' > release-notes.md
+
+      - name: Publish wash-cli release
+        uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974
+        # if: startsWith(github.ref, 'refs/tags/wash-cli-v')
+        with:
+          generate_release_notes: true
+          body_path: release-notes.md
+          files: ./wash/*
+          tag_name: ${{ env.WASH_TEST_VERSION }}
