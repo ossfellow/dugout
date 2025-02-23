@@ -33,7 +33,7 @@ runs:
     - name: Install regctl
       shell: bash
       run: |
-        curl -L https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 -o /usr/local/bin/regctl
+        curl -s -L https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 -o /usr/local/bin/regctl
         chmod +x /usr/local/bin/regctl
 
     - name: Download Attestation and SBOM artifacts

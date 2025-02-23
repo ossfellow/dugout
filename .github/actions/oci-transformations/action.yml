@@ -52,7 +52,7 @@ runs:
       shell: bash
       run: |
         # Install regctl for OCI manipulation
-        curl -L https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 -o /usr/local/bin/regctl
+        curl -s -L https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 -o /usr/local/bin/regctl
         chmod +x /usr/local/bin/regctl
 
     # Process input image based on source type

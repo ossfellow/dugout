@@ -34,7 +34,7 @@ jobs:
         continue-on-error: true # Don't fail if nothing to clean
         run: |
           # List packages for the authenticated user
-          packages=$(curl -v -L \
+          packages=$(curl -s -L \
             -X GET \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
@@ -49,7 +49,7 @@ jobs:
           # Iterate over each package and delete if it matches the repository name
           for pkg in $(echo "$packages" | jq -r '.[] | .name'); do
             echo "Deleting package $pkg"
-            curl -v -L \
+            curl -s -L \
               -X DELETE \
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
@@ -61,7 +61,7 @@ jobs:
         continue-on-error: true # Don't fail if nothing to clean
         run: |
           # List releases for the repository
-          releases=$(curl -L \
+          releases=$(curl -s -L \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
@@ -75,7 +75,7 @@ jobs:
           # Iterate over each release and delete
           for release_id in $(echo "$releases" | jq -r '.[].id'); do
             echo "Deleting release with ID $release_id"
-            curl -L \
+            curl -s -L \
               -X DELETE \
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
