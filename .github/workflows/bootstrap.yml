@@ -32,11 +32,11 @@ jobs:
     strategy:
       matrix:
         package-name:
-          - wasmcloud
-          - wash
-          - wasmcloud-provenance
-          - http-server
-          - blobstore-azure
+          - dugout/wasmcloud
+          - dugout/wash
+          - dugout/wasmcloud-provenance
+          - dugout/http-server
+          - dugout/blobstore-azure
     steps:
       - name: Delete ${{ matrix.package-name }} package
         continue-on-error: true # Don't fail if nothing to clean
