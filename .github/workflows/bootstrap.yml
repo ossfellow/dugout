@@ -49,11 +49,12 @@ jobs:
             -d '{"query":"query {repository(owner:\"${{ github.repository_owner }}\", name:\"${{ github.repository }}\") {registryPackages(last:1) {edges{node{id, name, versions(last:100){edges {node {id, updatedAt, version}}}}}}}}"}' \
             -o /tmp/response.json \
             --url https://api.github.com/graphql
-      - name: Filter Packages
-        run: "cat /tmp/response.json | jq -r 'def daysAgo(days): (now | floor) - (days * 86400); [.data.repository.registryPackages.edges[0].node.versions.edges | sort_by(.node.updatedAt|fromdate) | reverse | .[] | select( .node.version != \"docker-base-layer\" ) | .value[].node.id] | unique_by(.) | @csv'  | cut -d, -f1  | sed -e 's/^\"//' -e 's/\"$//' > /tmp/release.json"
+      # - name: Filter Packages
+      #   run: "cat /tmp/response.json | jq -r 'def daysAgo(days): (now | floor) - (days * 86400); [.data.repository.registryPackages.edges[0].node.versions.edges | sort_by(.node.updatedAt|fromdate) | reverse | .[] | select( .node.version != \"docker-base-layer\" ) | .value[].node.id] | unique_by(.) | @csv'  | cut -d, -f1  | sed -e 's/^\"//' -e 's/\"$//' > /tmp/release.json"
       - name: Show Packages
         id: packages
-        run: printf "::set-output name=id::%s" $(cat /tmp/release.json)
+        run: yq -P /tmp/response.json
+        # run: printf "::set-output name=id::%s" $(cat /tmp/release.json)
 
       - name: Delete ${{ matrix.package-name }} package
         continue-on-error: true # Don't fail if nothing to clean
