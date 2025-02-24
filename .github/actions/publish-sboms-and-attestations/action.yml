@@ -36,10 +36,24 @@ runs:
         curl -s -L https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 -o /usr/local/bin/regctl
         chmod +x /usr/local/bin/regctl
 
-    - name: Download Attestation and SBOM artifacts
+    - name: Download Attestation artifacts
       uses: actions/download-artifact@v4
       with:
-        pattern: '*.spdx.json,*-attestation.json,*-attestation-metadata.yaml'
+        pattern: '*-attestation.json'
+        path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}
+        merge-multiple: true
+
+    - name: Download SBOM artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: '*.spdx.json'
+        path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}
+        merge-multiple: true
+
+    - name: Download attestation metadata artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: '*-attestation-metadata.yaml'
         path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}
         merge-multiple: true
 
