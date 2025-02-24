@@ -17,7 +17,7 @@ permissions:
 # Define test environment variables
 env:
   TEST_THIS_WORKFLOW: true # Whether to test this workflow
-  WASMCLOUD_TEST_VERSION: "v1.51.1" # wasmCloud version to test
+  WASMCLOUD_TEST_VERSION: "v1.5.1" # wasmCloud version to test
   WASH_TEST_VERSION: "wash-cli-v0.38.0" # wash-cli version to test
   RUN_BINARY_ATTESTATION: false # Whether to run the binary attestation workflow
   RUN_PROVIDER_ATTESTATION: true # Whether to run the provider attestation workflow
@@ -314,22 +314,24 @@ jobs:
           pattern: wasmcloud-*
       - run: |
           for dir in ./artifacts/wasmcloud-*; do
-            target=${dir#./artifacts/wasmcloud-}
-            for bin_path in $(find ${dir}/bin -type f); do
-              chmod +x ${bin_path}
-              bin=$(basename ${bin_path})
-              case "$bin" in
-                *.exe)
-                  bin="${bin%.exe}"
-                  mkdir -p ./${bin}
-                  mv ${bin_path} ./${bin}/${bin}-${target}.exe
-                ;;
-                *)
-                  mkdir -p ./${bin}
-                  mv ${bin_path} ./${bin}/${bin}-${target%-fhs}
-                ;;
-              esac
-            done
+            if [ -d "${dir}" ]; then
+              target=${dir#./artifacts/wasmcloud-}
+              for bin_path in $(find ${dir}/bin -type f); do
+                chmod +x ${bin_path}
+                bin=$(basename ${bin_path})
+                case "$bin" in
+                  *.exe)
+                    bin="${bin%.exe}"
+                    mkdir -p ./${bin}
+                    mv ${bin_path} ./${bin}/${bin}-${target}.exe
+                  ;;
+                  *)
+                    mkdir -p ./${bin}
+                      mv ${bin_path} ./${bin}/${bin}-${target%-fhs}
+                    ;;
+                  esac
+              done
+            fi
           done
 
       # Publish SBOMs and Attestation records
@@ -349,7 +351,28 @@ jobs:
               }
             ]
 
-      # Generate release notes with SBOM/attestation info, for wasmcloud releases
+      # Create release-notes.md file
+      - name: Create release-notes.md file
+        shell: bash
+        run: |
+          echo "Generating release notes for wasmCloud"
+          cat > release-notes.md << 'EOF'
+          ## Release Notes
+
+          This is a mock release for testing the impact of build provenance and SBOM generation on wasmCloud workflows, and the outcome of such changes.
+          EOF
+
+      # For wasmCloud releases
+      - name: Publish wasmCloud release
+        uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974
+        # if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          generate_release_notes: true
+          body_path: release-notes.md
+          files: ./wasmcloud/*
+          tag_name: ${{ env.WASMCLOUD_TEST_VERSION }}
+
+      # Generate release notes with SBOM/attestation info
       - name: Generate Release Notes
         if: ${{ env.RUN_PUBLISH_SBOMS_AND_ATTESTATIONS }}
         shell: bash
@@ -380,16 +403,7 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/${{ github.repository }}/releases/generate-notes \
             -d "{\"tag_name\": \"${{ env.WASMCLOUD_TEST_VERSION }}\"}" \
-            | jq -r '.body' > release-notes.md
-
-      - name: Publish wasmCloud release
-        uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974
-        # if: startsWith(github.ref, 'refs/tags/v')
-        with:
-          generate_release_notes: true
-          body_path: release-notes.md
-          files: ./wasmcloud/*
-          tag_name: ${{ env.WASMCLOUD_TEST_VERSION }}
+            | jq -r '.body' >> release-notes.md
 
   release-wash-cli:
     # if: startsWith(github.ref, 'refs/tags/wash-cli-v')
@@ -417,22 +431,24 @@ jobs:
           pattern: wash-*
       - run: |
           for dir in ./artifacts/wash-*; do
-            target=${dir#./artifacts/wash-}
-            for bin_path in $(find ${dir}/bin -type f); do
-              chmod +x ${bin_path}
-              bin=$(basename ${bin_path})
-              case "$bin" in
-                *.exe)
-                  bin="${bin%.exe}"
-                  mkdir -p ./${bin}
-                  mv ${bin_path} ./${bin}/${bin}-${target}.exe
-                ;;
-                *)
-                  mkdir -p ./${bin}
-                  mv ${bin_path} ./${bin}/${bin}-${target%-fhs}
-                ;;
-              esac
-            done
+            if [ -d "${dir}" ]; then
+              target=${dir#./artifacts/wash-}
+              for bin_path in $(find ${dir}/bin -type f); do
+                chmod +x ${bin_path}
+                bin=$(basename ${bin_path})
+                case "$bin" in
+                  *.exe)
+                    bin="${bin%.exe}"
+                    mkdir -p ./${bin}
+                    mv ${bin_path} ./${bin}/${bin}-${target}.exe
+                  ;;
+                  *)
+                    mkdir -p ./${bin}
+                    mv ${bin_path} ./${bin}/${bin}-${target%-fhs}
+                  ;;
+                esac
+              done
+            fi
           done
 
       # Publish SBOMs and Attestation records
@@ -446,13 +462,33 @@ jobs:
           registry-credentials: |
             [
               {
-                "url": "ghcr.io",
-                "username": "${{ github.actor }}",
-                "password": "${{ secrets.GITHUB_TOKEN }}"
+                \"url\": \"ghcr.io\",
+                \"username\": \"${{ github.actor }}\",
+                \"password\": \"${{ secrets.GITHUB_TOKEN }}\"
               }
             ]
 
-      # Generate release notes with SBOM/attestation info, for wash-cli releases
+      # Create release-notes.md file
+      - name: Create release-notes.md file
+        shell: bash
+        run: |
+          echo "Generating release notes for wash-cli"
+          cat > release-notes.md << 'EOF'
+          ## Release Notes
+
+          This is a mock release for testing the impact of build provenance and SBOM generation on wasmCloud workflows, and the outcome of such changes.
+          EOF
+
+      # For wash-cli releases
+      - name: Publish wash-cli release
+        uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974
+        # if: startsWith(github.ref, 'refs/tags/wash-cli-v')
+        with:
+          generate_release_notes: true
+          body_path: release-notes.md
+          files: ./wash/*
+          tag_name: ${{ env.WASH_TEST_VERSION }}
+      # Generate release notes with SBOM/attestation info
       - name: Generate Release Notes
         if: ${{ env.RUN_PUBLISH_SBOMS_AND_ATTESTATIONS }}
         shell: bash
@@ -483,13 +519,4 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/${{ github.repository }}/releases/generate-notes \
             -d "{\"tag_name\": \"${{ env.WASH_TEST_VERSION }}\"}" \
-            | jq -r '.body' > release-notes.md
-
-      - name: Publish wash-cli release
-        uses: softprops/action-gh-release@01570a1f39cb168c169c802c3bceb9e93fb10974
-        # if: startsWith(github.ref, 'refs/tags/wash-cli-v')
-        with:
-          generate_release_notes: true
-          body_path: release-notes.md
-          files: ./wash/*
-          tag_name: ${{ env.WASH_TEST_VERSION }}
+            | jq -r '.body' >> release-notes.md
