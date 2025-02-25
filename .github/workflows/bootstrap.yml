@@ -38,7 +38,6 @@ jobs:
           - dugout/http-server
           - dugout/blobstore-azure
     steps:
-
       - name: Fetch packages
         run: |
           echo "Fetching packages"
@@ -46,7 +45,7 @@ jobs:
             -s \
             -H "Accept: application/vnd.github.package-deletes-preview+json" \
             -H "Authorization: bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -d '{"query":"query {repository(owner:"${{ github.repository_owner }}", name:"${{ github.repository }}") {packages(packageType:"container", first:100) {edges{node{id, name, versions(first:100){edges {node {id, version}}}}pageInfo {hasNextPage endCursor}}}}"}' \
+            -d '{"query":"query {repository(owner:${{ github.repository_owner }}, name:${{ github.repository }}) {packages(packageType:container, first:100) {edges{node{id,name,versions(first:100){edges{node{id,version}}}}pageInfo {hasNextPage endCursor}}}}"}' \
             -o /tmp/response.json \
             --url https://api.github.com/graphql
       # - name: Filter Packages
@@ -61,9 +60,10 @@ jobs:
         uses: actions/delete-package-versions@v5
         with:
           package-name: ${{ matrix.package-name }}
-          package-type: 'container'
-          min-versions-to-keep: 0
-              # run: |
+          package-type: "container"
+          min-versions-to-keep:
+            0
+            # run: |
         #   # List packages for the authenticated user
         #   packages=$(curl -s -L \
         #     -X GET \
@@ -102,7 +102,8 @@ jobs:
           draft-drop: true
           draft-drop-count: -1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN:
+            ${{ secrets.GITHUB_TOKEN }}
             # run: |
         #   # List releases for the repository
         #   releases=$(curl -s -L \
