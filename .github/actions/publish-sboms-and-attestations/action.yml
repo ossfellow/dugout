@@ -87,7 +87,7 @@ runs:
             --file-title \
             --file-media-type="application/spdx+json" \
             --file "$sbom_file" \
-            --subject: ocidir://${{ inputs.subject-name }}-provenance:${{ inputs.release-version }} \
+            --subject ocidir://${{ inputs.subject-name }}-provenance:${{ inputs.release-version }} \
             --annotation "org.opencontainers.artifact.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
             --annotation "org.opencontainers.artifact.description=SPDX SBOM for ${subject_name}" \
             --annotation "org.opencontainers.artifact.type=org.spdx.sbom" \
@@ -121,7 +121,7 @@ runs:
             --file-title \
             --file-media-type="application/json" \
             --file "$attestation_file" \
-            --subject: ocidir://${{ inputs.subject-name }}-provenance:${{ inputs.release-version }} \
+            --subject ocidir://${{ inputs.subject-name }}-provenance:${{ inputs.release-version }} \
             --annotation "org.opencontainers.artifact.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
             --annotation "org.opencontainers.artifact.description=${artifact_type} attestation for ${subject_name}" \
             --annotation "org.opencontainers.artifact.type=org.sigstore.attestation" \
