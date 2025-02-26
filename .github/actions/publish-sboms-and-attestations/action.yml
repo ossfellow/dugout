@@ -61,10 +61,10 @@ runs:
       shell: bash
       run: |
         echo "Separating SBOM and attestation artifacts for wasmcloud and wash-cli"
-        if [[ "${{ inputs.subject-name }}" == "wash" ]]; then
+        if [[ "${{ inputs.subject-name }}" == "wash-cli" ]]; then
           # delete any files that its name does not start with `wash`
           find ${{ env.PROVENANCE_ARTIFACTS_DIR }} -type f ! -name 'wash-*' -delete
-        elif [[ "${{ inputs.subject-name }}" == "wasmcloud" ]]; then
+        else
           # delete any files that its name does start with `wash` (i.e. keep wasmcloud and providers)
           find ${{ env.PROVENANCE_ARTIFACTS_DIR }} -type f -name 'wash-*' -delete
         fi
