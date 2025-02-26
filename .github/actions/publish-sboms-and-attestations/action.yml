@@ -137,7 +137,7 @@ runs:
             --annotation "org.opencontainers.artifact.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
             --annotation "org.opencontainers.artifact.description=Attestation for ${subject_name} ${artifact_type^^}" \
             --annotation "org.opencontainers.artifact.type=in-toto.attestation" \
-            --annotation "org.sigstore.attestation.id=${attestation_id}" \
+            --annotation "github.attestation.id=${attestation_id}" \
             ${subject_digest:+"--annotation"} ${subject_digest:+"org.opencontainers.artifact.ref=${subject_digest}"}
         done
 
@@ -153,12 +153,12 @@ runs:
         regctl artifact list ${IMAGE_PATH} -v error | yq -P
         echo
 
-        echo "=== Processing Individual Artifacts ==="
-        for digest in $(regctl artifact list ${IMAGE_PATH} -v error | yq -r '.Referrers | with_entries(select(.key | test("Digest"))) | to_entries | .[].value'); do
-          echo "=== Artifact for $digest ==="
-          regctl blob get ${IMAGE_PATH} ${digest} -v error | yq -P
-          echo
-        done
+        # echo "=== Processing Individual Artifacts ==="
+        # for digest in $(regctl artifact list ${IMAGE_PATH} -v error | yq -r '.Referrers | with_entries(select(.key | test("Digest"))) | to_entries | .[].value'); do
+        #   echo "=== Artifact for $digest ==="
+        #   regctl blob get ${IMAGE_PATH} ${digest} -v error | yq -P
+        #   echo
+        # done
 
     - name: Push artifact to registry
       if: inputs.registry-credentials
