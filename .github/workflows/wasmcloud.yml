@@ -341,6 +341,7 @@ jobs:
         with:
           subject-name: wasmcloud
           release-version: ${{ env.WASMCLOUD_TEST_VERSION }}-docs
+          show-metadata: true
           registry: ghcr.io
           registry-credentials: |
             [
@@ -386,10 +387,10 @@ jobs:
           You can inspect these documents using tools like `regctl`:
           ```bash
           # To list the artifacts in the OCI artifact
-          regctl artifact list ghcr.io/${{ github.repository }}/wasmcloud-provenance:${{ env.WASMCLOUD_TEST_VERSION }}
+          regctl artifact list ghcr.io/${{ github.repository }}/wasmcloud-provenance-test:${{ env.WASMCLOUD_TEST_VERSION }}
 
           # To inspect the contents of an artifact
-          regctl artifact get ghcr.io/${{ github.repository }}/wasmcloud-provenance:${{ env.WASMCLOUD_TEST_VERSION }} [artifact-manifest-digest-from-previous-command]
+          regctl artifact get ghcr.io/${{ github.repository }}/wasmcloud-provenance-test:${{ env.WASMCLOUD_TEST_VERSION }} [artifact-manifest-digest-from-previous-command]
           ```
 
           ---
@@ -459,6 +460,7 @@ jobs:
         with:
           subject-name: wash-cli
           release-version: ${{ env.WASMCLOUD_TEST_VERSION }}-docs
+          show-metadata: true
           registry: ghcr.io
           registry-credentials: |
             [
@@ -503,10 +505,10 @@ jobs:
           You can inspect these documents using tools like `regctl`:
           ```bash
           # To list the artifacts in the OCI artifact
-          regctl artifact list ghcr.io/${{ github.repository }}/wash-cli-provenance:${{ env.WASH_TEST_VERSION }}
+          regctl artifact list ghcr.io/${{ github.repository }}/wash-cli-provenance-test:${{ env.WASH_TEST_VERSION }}
 
           # To inspect the contents of an artifact
-          regctl artifact get ghcr.io/${{ github.repository }}/wash-cli-provenance:${{ env.WASH_TEST_VERSION }} [artifact-manifest-digest-from-previous-command]
+          regctl artifact get ghcr.io/${{ github.repository }}/wash-cli-provenance-test:${{ env.WASH_TEST_VERSION }} [artifact-manifest-digest-from-previous-command]
           ```
 
           ---
