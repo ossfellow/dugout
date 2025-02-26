@@ -38,32 +38,14 @@ jobs:
           - dugout/http-server
           - dugout/blobstore-azure
     steps:
-      - name: Fetch packages
-        run: |
-          echo "Fetching packages"
-          curl -X POST \
-            -s \
-            -H "Accept: application/vnd.github.package-deletes-preview+json" \
-            -H "Authorization: bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -d '{"query":"query {repository(owner:${{ github.repository_owner }}, name:${{ github.repository }}) {packages(packageType:container, first:100) {edges{node{id,name,versions(first:100){edges{node{id,version}}}} pageInfo {hasNextPage, endCursor}}}}"}' \
-            -o /tmp/response.json \
-            --url https://api.github.com/graphql
-      # - name: Filter Packages
-      #   run: "cat /tmp/response.json | jq -r 'def daysAgo(days): (now | floor) - (days * 86400); [.data.repository.registryPackages.edges[0].node.versions.edges | sort_by(.node.updatedAt|fromdate) | reverse | .[] | select( .node.version != \"docker-base-layer\" ) | .value[].node.id] | unique_by(.) | @csv'  | cut -d, -f1  | sed -e 's/^\"//' -e 's/\"$//' > /tmp/release.json"
-      - name: Show Packages
-        id: packages
-        run: cat /tmp/response.json
-        # run: printf "::set-output name=id::%s" $(cat /tmp/release.json)
-
       - name: Delete ${{ matrix.package-name }} package
         continue-on-error: true # Don't fail if nothing to clean
         uses: actions/delete-package-versions@v5
         with:
           package-name: ${{ matrix.package-name }}
           package-type: "container"
-          min-versions-to-keep:
-            0
-            # run: |
+          min-versions-to-keep: 0
+        # run: |
         #   # List packages for the authenticated user
         #   packages=$(curl -s -L \
         #     -X GET \
@@ -102,9 +84,8 @@ jobs:
           draft-drop: true
           draft-drop-count: -1
         env:
-          GITHUB_TOKEN:
-            ${{ secrets.GITHUB_TOKEN }}
-            # run: |
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # run: |
         #   # List releases for the repository
         #   releases=$(curl -s -L \
         #     -H "Accept: application/vnd.github+json" \

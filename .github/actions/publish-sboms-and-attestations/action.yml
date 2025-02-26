@@ -39,23 +39,35 @@ runs:
     - name: Download Attestation artifacts
       uses: actions/download-artifact@v4
       with:
-        pattern: '*-attestation.json'
+        pattern: "*-attestation.json"
         path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}
         merge-multiple: true
 
     - name: Download SBOM artifacts
       uses: actions/download-artifact@v4
       with:
-        pattern: '*.spdx.json'
+        pattern: "*.spdx.json"
         path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}
         merge-multiple: true
 
     - name: Download attestation metadata artifacts
       uses: actions/download-artifact@v4
       with:
-        pattern: '*-attestation-metadata.yaml'
+        pattern: "*-attestation-metadata.yaml"
         path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}
         merge-multiple: true
+
+    - name: Cleanup artifacts
+      shell: bash
+      run: |
+        echo "Separating SBOM and attestation artifacts for wasmcloud and wash-cli"
+        if [[ "${{ inputs.subject-name }}" == "wash" ]]; then
+          # delete any files that its name does not start with `wash`
+          find ${{ env.PROVENANCE_ARTIFACTS_DIR }} -type f ! -name 'wash-*' -delete
+        elif [[ "${{ inputs.subject-name }}" == "wasmcloud" ]]; then
+          # delete any files that its name does start with `wash` (i.e. keep wasmcloud and providers)
+          find ${{ env.PROVENANCE_ARTIFACTS_DIR }} -type f -name 'wash-*' -delete
+        fi
 
     - name: Create provenance:${{ inputs.release-version }} OCI artifact image
       shell: bash

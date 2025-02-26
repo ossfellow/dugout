@@ -1,9 +1,0 @@
-{repository(owner:ossfellow, name:ossfellow/dugout) {packages(packageType:container, first: 100) {edges{node{id,name,versions(first: 100){edges{node{id,version
-              }
-            }
-          }
-        },pageInfo {hasNextPage endCursor
-        }
-      }
-    }
-  }
