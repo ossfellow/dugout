@@ -112,7 +112,7 @@ jobs:
 
       - name: Push `${{ inputs.bin }}` version tag
         id: push-images
-        if: ${{ env.RUN_OCI_ATTESTATION }} && startswith(github.ref, format('refs/tags/{0}v', matrix.prefix))
+        if: ${{ env.RUN_OCI_ATTESTATION }} && startswith(github.ref, format('refs/tags/{0}v', inputs.prefix))
         continue-on-error: true
         # continue-on-error: ${{ env.TEST_THIS_WORKFLOW }}
         uses: ./.github/actions/oci-transformations
@@ -147,7 +147,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        image: ${{ fromJson(needs.oci.outputs.pushed-images) }}
+        image: ${{ fromJson(needs.oci.outputs.pushed-images || '[]') }}
     steps:
       - name: Prepare test environment
         if: ${{ env.RUN_OCI_ATTESTATION }}
