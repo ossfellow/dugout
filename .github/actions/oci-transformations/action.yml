@@ -44,6 +44,11 @@ inputs:
     description: "JSON array of registry credentials [{url, username, password}]"
     required: false
 
+outputs:
+  pushed-images:
+    description: "JSON array of pushed images with their digests"
+    value: ${{ steps.push-images.outputs.images_json }}
+
 runs:
   using: "composite"
   steps:
@@ -202,11 +207,15 @@ runs:
 
     # Push to target registries
     - name: Push to target registries
+      id: push-images
       if: inputs.target-registries
       shell: bash
       run: |
         echo "Pushing ${{ inputs.source-image }}:${{ inputs.source-tag }} to target registries"
         IMAGE_PATH="${{ startsWith(inputs.source-image, 'ocidir://') && inputs.source-image || 'ocidir://workspace' }}"
+
+        # Initialize empty JSON array for images
+        IMAGES_JSON="[]"
 
         # Login to registries if credentials provided
         if [ ! -z "${{ inputs.registry-credentials }}" ]; then
@@ -234,47 +243,63 @@ runs:
           if [ ! -z "$registry" ]; then
             echo "Pushing to $registry"
             # Base image
+            BASE_IMAGE="${registry}/${{ github.repository }}/${{ inputs.image-title }}:${{ inputs.source-tag }}"
             regctl image copy \
               ${IMAGE_PATH}:${{ inputs.source-tag }} \
-              ${registry}/${{ github.repository }}/${{ inputs.image-title }}:${{ inputs.source-tag }} \
+              ${BASE_IMAGE} \
               --digest-tags \
               --referrers
 
-            echo "=== Image Variants ==="
-            echo "${{ inputs.image-variants }}" | yq -r '.[]'
-            echo "=== End of Image Variants ==="
+            # Get image digest for attestation
+            BASE_DIGEST=$(regctl image digest ${BASE_IMAGE})
+            
+            # Add to JSON array
+            IMAGES_JSON=$(echo $IMAGES_JSON | jq --arg img "${BASE_IMAGE}" --arg digest "${BASE_DIGEST}" '. += [{"image": $img, "digest": $digest}]')
 
             # Variants if specified
             if [ ! -z "${{ inputs.image-variants }}" ]; then
               echo "${{ inputs.image-variants }}" | yq -r '.[]' | while read -r variant; do
                 name=$(echo $variant | yq -r '.name')
                 echo $variant | yq -r '.tags[]' | while read -r tag; do
-                  echo "Pushing ONE ${IMAGE_PATH}:${{ inputs.source-tag }} to ${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag}"
-                  # regctl image copy \
-                  #   ${IMAGE_PATH}:${{ inputs.source-tag }} \
-                  #   ${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag} \
-                  #   --digest-tags \
-                  #   --referrers
+                  VARIANT_IMAGE="${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag}"
+                  echo "Pushing variant ${IMAGE_PATH}:${{ inputs.source-tag }} to ${VARIANT_IMAGE}"
+                  regctl image copy \
+                    ${IMAGE_PATH}:${{ inputs.source-tag }} \
+                    ${VARIANT_IMAGE} \
+                    --digest-tags \
+                    --referrers
+
+                  # Get image digest for attestation
+                  VARIANT_DIGEST=$(regctl image digest ${VARIANT_IMAGE})
+                  
+                  # Add to JSON array
+                  IMAGES_JSON=$(echo $IMAGES_JSON | jq --arg img "${VARIANT_IMAGE}" --arg digest "${VARIANT_DIGEST}" '. += [{"image": $img, "digest": $digest}]')
                 done
               done
             fi
-
-            echo "=== Default Tags ==="
-            echo "${{ inputs.default-tags }}"
-            echo "=== End of Default Tags ==="
 
             # Additional tags if specified
             if [ ! -z "${{ inputs.default-tags }}" ]; then
               echo "${{ inputs.default-tags }}" | while read tag; do
                 if [ ! -z "$tag" ]; then
-                  echo "Pushing MORE ${IMAGE_PATH}:${{ inputs.source-tag }} to ${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag}"
-                  # regctl image copy \
-                  #   ${IMAGE_PATH}:${{ inputs.source-tag }} \
-                  #   ${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag} \
-                  #   --digest-tags \
-                  #   --referrers
+                  TAG_IMAGE="${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag}"
+                  echo "Pushing additional tag ${IMAGE_PATH}:${{ inputs.source-tag }} to ${TAG_IMAGE}"
+                  regctl image copy \
+                    ${IMAGE_PATH}:${{ inputs.source-tag }} \
+                    ${TAG_IMAGE} \
+                    --digest-tags \
+                    --referrers
+
+                  # Get image digest for attestation
+                  TAG_DIGEST=$(regctl image digest ${TAG_IMAGE})
+                  
+                  # Add to JSON array
+                  IMAGES_JSON=$(echo $IMAGES_JSON | jq --arg img "${TAG_IMAGE}" --arg digest "${TAG_DIGEST}" '. += [{"image": $img, "digest": $digest}]')
                 fi
               done
             fi
           fi
         done
+        
+        # Output the JSON array
+        echo "images_json=$IMAGES_JSON" >> $GITHUB_OUTPUT

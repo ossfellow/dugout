@@ -25,6 +25,8 @@ env:
 jobs:
   oci:
     runs-on: ubuntu-22.04
+    outputs:
+      pushed-images: ${{ steps.push-images.outputs.images_json }}
     permissions:
       contents: read
       packages: write
@@ -99,13 +101,6 @@ jobs:
             echo
           done
 
-      # - name: Convert to OCI directory format
-      #   run: |
-      #     mkdir -p ./oci-dir-wolfi
-
-      #     # Convert Wolfi image
-      #     skopeo copy --all oci-archive:./oci-wolfi oci:./wolfi
-
       - name: Upload OCI archive
         if: ${{ env.TEST_THIS_WORKFLOW }}
         continue-on-error: true
@@ -116,6 +111,7 @@ jobs:
           overwrite: true
 
       - name: Push `${{ inputs.bin }}` version tag
+        id: push-images
         if: ${{ env.RUN_OCI_ATTESTATION }} && startswith(github.ref, format('refs/tags/{0}v', matrix.prefix))
         continue-on-error: true
         # continue-on-error: ${{ env.TEST_THIS_WORKFLOW }}
@@ -145,3 +141,43 @@ jobs:
                 \"password\": \"${{ secrets.GITHUB_TOKEN }}\"
               }
             ]
+
+  attest-images:
+    needs: oci
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        image: ${{ fromJson(needs.oci.outputs.pushed-images) }}
+    steps:
+      - name: Prepare test environment
+        if: ${{ env.RUN_OCI_ATTESTATION }}
+        uses: ossfellow/.github/actions/tugboat@main
+        with:
+          target-repo: "wasmCloud/wasmCloud"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-assets: |
+            ["actions/artifact-attestation/action.yml"]
+
+      # Attest the image
+      - name: Attest Image
+        if: ${{ env.RUN_OCI_ATTESTATION }}
+        uses: ./.github/actions/artifact-attestation
+        with:
+          artifact-type: image
+          subject-digest: ${{ matrix.image.digest }}
+          subject-name: ${{ matrix.image.image }}
+          show-summary: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          push-to-registry: true
+
+      # Attest the image SBOM
+      - name: Attest Image SBOM
+        if: ${{ env.RUN_OCI_ATTESTATION }}
+        uses: ./.github/actions/artifact-attestation
+        with:
+          artifact-type: sbom
+          subject-digest: ${{ matrix.image.digest }}
+          subject-name: ${{ matrix.image.image }}
+          show-summary: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          push-to-registry: true
