@@ -239,7 +239,8 @@ runs:
         fi
 
         # Push each variant to each registry with each tag
-        echo "${{ inputs.target-registries }}" | while read registry; do
+        # echo "${{ inputs.target-registries }}" | while read registry; do
+        while read registry; do
           if [ ! -z "$registry" ]; then
             echo "Pushing to $registry"
             # Base image
@@ -301,7 +302,7 @@ runs:
               done
             fi
           fi
-        done
+        done < <(echo "${{ inputs.target-registries }}")
 
         # Output the JSON array
         echo "images_json=$IMAGES_JSON" >> $GITHUB_OUTPUT
