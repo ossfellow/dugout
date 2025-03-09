@@ -239,7 +239,6 @@ runs:
         fi
 
         # Push each variant to each registry with each tag
-        # echo "${{ inputs.target-registries }}" | while read registry; do
         while read registry; do
           if [ ! -z "$registry" ]; then
             echo "Pushing to $registry"
@@ -261,7 +260,7 @@ runs:
 
             # Variants if specified
             if [ ! -z "${{ inputs.image-variants }}" ]; then
-              echo "${{ inputs.image-variants }}" | yq -r '.[]' | while read -r variant; do
+              while read -r variant; do
                 name=$(echo $variant | yq -r '.name')
                 echo $variant | yq -r '.tags[]' | while read -r tag; do
                   VARIANT_IMAGE="${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag}"
@@ -278,12 +277,12 @@ runs:
                   # Add to JSON array
                   IMAGES_JSON=$(echo $IMAGES_JSON | jq --arg img "${VARIANT_IMAGE}" --arg digest "${VARIANT_DIGEST}" '. += [{"image": $img, "digest": $digest}]')
                 done
-              done
+              done < <(echo "${{ inputs.image-variants }}" | yq -r '.[]')
             fi
 
             # Additional tags if specified
             if [ ! -z "${{ inputs.default-tags }}" ]; then
-              echo "${{ inputs.default-tags }}" | while read tag; do
+                while read tag; do
                 if [ ! -z "$tag" ]; then
                   TAG_IMAGE="${registry}/${{ github.repository }}/${{ inputs.image-title }}:${tag}"
                   echo "Pushing additional tag ${IMAGE_PATH}:${{ inputs.source-tag }} to ${TAG_IMAGE}"
@@ -299,7 +298,7 @@ runs:
                   # Add to JSON array
                   IMAGES_JSON=$(echo $IMAGES_JSON | jq --arg img "${TAG_IMAGE}" --arg digest "${TAG_DIGEST}" '. += [{"image": $img, "digest": $digest}]')
                 fi
-              done
+              done < <(echo "${{ inputs.default-tags }}" | yq -r '.[]')
             fi
           fi
         done < <(echo "${{ inputs.target-registries }}")
