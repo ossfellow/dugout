@@ -304,5 +304,7 @@ runs:
         done < <(echo "${{ inputs.target-registries }}")
 
         # Output the JSON array
-        echo "images_json=$IMAGES_JSON" >> $GITHUB_OUTPUT
         echo "$IMAGES_JSON" | yq -P
+        # Convert to compact JSON
+        IMAGES_JSON=$(echo $IMAGES_JSON | jq -c '.')
+        echo "images_json=$IMAGES_JSON" >> $GITHUB_OUTPUT
