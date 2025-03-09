@@ -252,7 +252,9 @@ runs:
 
             # Get image digest for attestation
             BASE_DIGEST=$(regctl image digest ${BASE_IMAGE})
-            
+            echo "Base image: $BASE_IMAGE"
+            echo "Base image digest: $BASE_DIGEST"
+
             # Add to JSON array
             IMAGES_JSON=$(echo $IMAGES_JSON | jq --arg img "${BASE_IMAGE}" --arg digest "${BASE_DIGEST}" '. += [{"image": $img, "digest": $digest}]')
 
@@ -271,7 +273,7 @@ runs:
 
                   # Get image digest for attestation
                   VARIANT_DIGEST=$(regctl image digest ${VARIANT_IMAGE})
-                  
+
                   # Add to JSON array
                   IMAGES_JSON=$(echo $IMAGES_JSON | jq --arg img "${VARIANT_IMAGE}" --arg digest "${VARIANT_DIGEST}" '. += [{"image": $img, "digest": $digest}]')
                 done
@@ -292,7 +294,7 @@ runs:
 
                   # Get image digest for attestation
                   TAG_DIGEST=$(regctl image digest ${TAG_IMAGE})
-                  
+
                   # Add to JSON array
                   IMAGES_JSON=$(echo $IMAGES_JSON | jq --arg img "${TAG_IMAGE}" --arg digest "${TAG_DIGEST}" '. += [{"image": $img, "digest": $digest}]')
                 fi
@@ -300,6 +302,6 @@ runs:
             fi
           fi
         done
-        
+
         # Output the JSON array
         echo "images_json=$IMAGES_JSON" >> $GITHUB_OUTPUT
