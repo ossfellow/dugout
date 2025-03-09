@@ -305,3 +305,4 @@ runs:
 
         # Output the JSON array
         echo "images_json=$IMAGES_JSON" >> $GITHUB_OUTPUT
+        echo "$IMAGES_JSON" | yq -P
