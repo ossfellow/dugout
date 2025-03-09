@@ -308,3 +308,21 @@ runs:
         # Convert to compact JSON
         IMAGES_JSON=$(echo $IMAGES_JSON | jq -c '.')
         echo "images_json=$IMAGES_JSON" >> $GITHUB_OUTPUT
+
+    # Save image data
+    - name: Save image data
+      shell: bash
+      run: |
+        echo '${{ steps.push-images.outputs.images_json }}' > image-data.json
+
+    - name: Upload image data
+      uses: actions/upload-artifact@v4
+      with:
+        name: image-data
+        path: image-data.json
+
+    - name: Set matrix
+      id: set-matrix
+      shell: bash
+      run: |
+        echo "matrix=$(cat image-data.json)" >> $GITHUB_OUTPUT
