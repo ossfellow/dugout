@@ -307,7 +307,7 @@ runs:
         echo "$IMAGES_JSON" | yq -P
         # Convert to compact JSON
         IMAGES_JSON=$(echo $IMAGES_JSON | jq -c '.')
-        # Base64 encode the JSON
-        IMAGES_JSON_B64=$(echo -n "$IMAGES_JSON" | base64 -w 0)
-        # Set the output
-        echo "images_json_b64=$IMAGES_JSON_B64" >> $GITHUB_OUTPUT
+        # Set the output using delimiter syntax
+        echo "images_json<<EOF" >> $GITHUB_OUTPUT
+        echo "$IMAGES_JSON" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT

@@ -144,10 +144,15 @@ jobs:
 
       - name: Debug Output
         run: |
-          IMAGES_JSON_B64="${{ steps.push-images.outputs.images_json_b64 }}"
-          IMAGES_JSON=$(echo -n "$IMAGES_JSON_B64" | base64 -d)
-          echo "Decoded JSON: $IMAGES_JSON"
-          echo "Length: $(echo "$IMAGES_JSON" | wc -c)"
+          echo "Output from push-images: '${{ steps.push-images.outputs.images_json }}'"
+          echo "Length: $(echo '${{ steps.push-images.outputs.images_json }}' | wc -c)"
+
+          # Parse the JSON to verify it's valid
+          echo "Validating JSON format:"
+          echo '${{ steps.push-images.outputs.images_json }}' | jq . || echo "Invalid JSON"
+
+          # Count number of images in the array
+          echo "Number of images: $(echo '${{ steps.push-images.outputs.images_json }}' | jq 'length')"
 
   attest-images:
     needs: oci
