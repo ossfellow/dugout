@@ -149,7 +149,7 @@ jobs:
 
   attest-images:
     needs: oci
-    if: ${{ needs.oci.outputs.pushed-images != '' }}
+    if: ${{ needs.oci.outputs.pushed-images != '' && needs.oci.outputs.pushed-images != '[]' }}
     runs-on: ubuntu-22.04
     strategy:
       matrix:
