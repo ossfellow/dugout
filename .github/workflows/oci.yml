@@ -144,8 +144,10 @@ jobs:
 
       - name: Debug Output
         run: |
-          echo "Output from push-images: '${{ steps.push-images.outputs.images_json }}'"
-          echo "Length: $(echo '${{ steps.push-images.outputs.images_json }}' | wc -c)"
+          IMAGES_JSON_B64="${{ steps.push-images.outputs.images_json_b64 }}"
+          IMAGES_JSON=$(echo -n "$IMAGES_JSON_B64" | base64 -d)
+          echo "Decoded JSON: $IMAGES_JSON"
+          echo "Length: $(echo "$IMAGES_JSON" | wc -c)"
 
   attest-images:
     needs: oci
