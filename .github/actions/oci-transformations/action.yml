@@ -307,7 +307,8 @@ runs:
         echo "$IMAGES_JSON" | yq -P
         # Convert to compact JSON
         IMAGES_JSON=$(echo $IMAGES_JSON | jq -c '.')
-        # Set the output using delimiter syntax
-        echo "images_json<<EOF" >> $GITHUB_OUTPUT
-        echo "$IMAGES_JSON" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
+        # Use printf to ensure proper escaping
+        printf "images_json=%s\n" "$IMAGES_JSON" >> $GITHUB_OUTPUT
+        # Write to a file as backup
+        echo "$IMAGES_JSON" > "$GITHUB_WORKSPACE/pushed-images.json"
+

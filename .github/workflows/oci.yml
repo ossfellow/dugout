@@ -142,17 +142,38 @@ jobs:
               }
             ]
 
+      - name: Read pushed images
+        id: read-images
+        run: |
+          # First try to use the output from the action
+          IMAGES_JSON="${{ steps.push-images.outputs.images_json }}"
+
+          # If empty, try to read from the file
+          if [ -z "$IMAGES_JSON" ] && [ -f "$GITHUB_WORKSPACE/pushed-images.json" ]; then
+            IMAGES_JSON=$(cat "$GITHUB_WORKSPACE/pushed-images.json")
+            echo "Reading from file: $IMAGES_JSON"
+          fi
+
+          # If we have JSON, set it as output
+          if [ -n "$IMAGES_JSON" ]; then
+            echo "images_json=$IMAGES_JSON" >> $GITHUB_OUTPUT
+            echo "Found pushed images (length: $(echo "$IMAGES_JSON" | wc -c))"
+          else
+            echo "No pushed images found"
+            echo "images_json=[]" >> $GITHUB_OUTPUT
+          fi
+
       - name: Debug Output
         run: |
-          echo "Output from push-images: '${{ steps.push-images.outputs.images_json }}'"
-          echo "Length: $(echo '${{ steps.push-images.outputs.images_json }}' | wc -c)"
+          echo "Output from push-images: '${{ steps.read-images.outputs.images_json }}'"
+          echo "Length: $(echo '${{ steps.read-images.outputs.images_json }}' | wc -c)"
 
           # Parse the JSON to verify it's valid
           echo "Validating JSON format:"
-          echo '${{ steps.push-images.outputs.images_json }}' | jq . || echo "Invalid JSON"
+          echo '${{ steps.read-images.outputs.images_json }}' | jq . || echo "Invalid JSON"
 
           # Count number of images in the array
-          echo "Number of images: $(echo '${{ steps.push-images.outputs.images_json }}' | jq 'length')"
+          echo "Number of images: $(echo '${{ steps.read-images.outputs.images_json }}' | jq 'length')"
 
   attest-images:
     needs: oci
