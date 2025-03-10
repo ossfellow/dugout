@@ -56,7 +56,7 @@ runs:
         if [[ -n "${{ inputs.artifact-name }}" ]]; then
           SBOM_NAME="${{ inputs.artifact-name }}"
         else
-          SBOM_NAME="${{ inputs.subject-name }}"
+          SBOM_NAME="${SUBJECT_NAME}"
         fi
         echo "SBOM_NAME=${SBOM_NAME}" >> $GITHUB_ENV
 

@@ -192,6 +192,13 @@ jobs:
           github-assets: |
             ["actions/artifact-attestation/action.yml"]
 
+      - name: Strip Image Tag
+        id: strip-image-tag
+        run: |
+          base_image=${{ matrix.image.image }}
+          base_image=${base_image%:*}
+          echo "base_image=$base_image" >> $GITHUB_OUTPUT
+
       # Attest the image
       - name: Attest Image
         if: ${{ env.RUN_OCI_ATTESTATION }}
@@ -199,7 +206,7 @@ jobs:
         with:
           artifact-type: image
           subject-digest: ${{ matrix.image.digest }}
-          subject-name: ${{ matrix.image.image }}
+          subject-name: ${{ steps.strip-image-tag.outputs.base_image }}
           show-summary: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
           push-to-registry: true
@@ -211,7 +218,7 @@ jobs:
         with:
           artifact-type: sbom
           subject-digest: ${{ matrix.image.digest }}
-          subject-name: ${{ matrix.image.image }}
+          subject-name: ${{ steps.strip-image-tag.outputs.base_image }}
           show-summary: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
           push-to-registry: true
