@@ -497,6 +497,10 @@ jobs:
           regctl artifact get ghcr.io/${{ github.repository }}/wash-cli-provenance:${{ env.WASH_TEST_VERSION }} [artifact-manifest-digest-from-previous-command]
           ```
 
+          You can also verify artifact attestations with the GitHub CLI:
+            - For online verification, please see [Verifying attestations online](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds#verifying-artifact-attestations-with-the-github-cli)
+            - For offline verification, please see [Verifying attestations offline](https://docs.github.com/en/actions/security-guides/verifying-attestations-offline)
+
           ---
           ## Release Notes
           EOF
