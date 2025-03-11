@@ -130,3 +130,13 @@ runs:
         path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json
         if-no-files-found: warn
         overwrite: true
+
+    # Upload the SBOM used for image attestations to common artifact storage
+    - name: Upload ${{ inputs.subject-name }} SBOM
+      if: ${{ env.SBOM_FILE_EXISTS }} && ${{ inputs.subject-name != '' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.subject-name }}.spdx.json
+        path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json
+        if-no-files-found: warn
+        overwrite: true

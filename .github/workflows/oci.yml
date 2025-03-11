@@ -199,12 +199,20 @@ jobs:
           base_image=${base_image%:*}
           echo "base_image=$base_image" >> $GITHUB_OUTPUT
 
+      - name: Set artifact name
+        id: artifact_name
+        run: |
+          # Construct artifact name
+          ARTIFACT_NAME=$(echo "${{ steps.strip-image-tag.outputs.base_image  }}" | awk -F '/' '{print $NF}')
+          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+
       # Attest the image
       - name: Attest Image
         if: ${{ env.RUN_OCI_ATTESTATION }}
         uses: ./.github/actions/artifact-attestation
         with:
           artifact-type: image
+          artifact-name: ${{ steps.artifact_name.outputs.artifact_name }}
           subject-digest: ${{ matrix.image.digest }}
           subject-name: ${{ steps.strip-image-tag.outputs.base_image }}
           show-summary: true
@@ -217,6 +225,7 @@ jobs:
         uses: ./.github/actions/artifact-attestation
         with:
           artifact-type: sbom
+          artifact-name: ${{ steps.artifact_name.outputs.artifact_name }}
           subject-digest: ${{ matrix.image.digest }}
           subject-name: ${{ steps.strip-image-tag.outputs.base_image }}
           show-summary: true
