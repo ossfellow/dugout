@@ -83,7 +83,7 @@ runs:
       uses: actions/download-artifact@v4
       with:
         name: ${{ env.SBOM_NAME }}.spdx.json
-        path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}
+        path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ env.SBOM_NAME }}.spdx.json
         merge-multiple: true
 
     - name: Check ${{ inputs.subject-name }} SBOM
