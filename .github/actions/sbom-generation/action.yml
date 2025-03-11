@@ -131,12 +131,21 @@ runs:
         if-no-files-found: warn
         overwrite: true
 
+    # Create a copy used for image attestations
+    # Attention: This is a workaround to ensure the SBOM is available for image attestations (highlighting differences between caller workflows)
+    - name: Copy ${{ inputs.subject-name }} SBOM
+      if: ${{ env.SBOM_FILE_EXISTS }} && ${{ inputs.subject-name != '' }}
+      shell: bash
+      run: |
+        cp ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}.spdx.json
+
     # Upload the SBOM used for image attestations to common artifact storage
+    # Attention: This is a workaround to ensure the SBOM is available for image attestations (highlighting differences between caller workflows)
     - name: Upload ${{ inputs.subject-name }} SBOM
       if: ${{ env.SBOM_FILE_EXISTS }} && ${{ inputs.subject-name != '' }}
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.subject-name }}.spdx.json
-        path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.artifact-name }}.spdx.json
+        path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}/${{ inputs.subject-name }}.spdx.json
         if-no-files-found: warn
         overwrite: true
