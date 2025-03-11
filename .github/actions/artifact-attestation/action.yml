@@ -75,7 +75,7 @@ runs:
         subject-checksums: ${{ inputs.subject-digest && '' ||  inputs.subject-checksums }}
         push-to-registry: ${{ (inputs.artifact-type == 'image') && inputs.push-to-registry || 'false' }}
         show-summary: ${{ inputs.show-summary }}
-        # github-token: ${{ inputs.github-token }}
+        github-token: ${{ inputs.github-token }}
 
     - name: Get ${{ inputs.subject-name }} SBOM
       if: ${{ env.DOWNLOAD_SBOM == 'true' }}
@@ -103,7 +103,7 @@ runs:
         sbom-path: ${{ env.LOCAL_SBOM_FILE }}
         push-to-registry: ${{ inputs.subject-name && inputs.subject-digest && inputs.push-to-registry || 'false' }}
         show-summary: ${{ inputs.show-summary }}
-        # github-token: ${{ inputs.github-token }}
+        github-token: ${{ inputs.github-token }}
 
     - name: Capture attestation metadata
       shell: bash

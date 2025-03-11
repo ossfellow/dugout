@@ -221,7 +221,7 @@ jobs:
           subject-digest: ${{ matrix.image.digest }}
           subject-name: ${{ steps.strip-image-tag.outputs.base_image }}
           show-summary: true
-          # github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           push-to-registry: true
 
       # Attest the image SBOM
@@ -234,5 +234,5 @@ jobs:
           subject-digest: ${{ matrix.image.digest }}
           subject-name: ${{ steps.strip-image-tag.outputs.base_image }}
           show-summary: true
-          # github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           push-to-registry: true
