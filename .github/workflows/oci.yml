@@ -182,6 +182,11 @@ jobs:
     strategy:
       matrix:
         image: ${{ fromJson(needs.oci.outputs.pushed-images || '[]') }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
     steps:
       - name: Prepare test environment
         if: ${{ env.RUN_OCI_ATTESTATION }}
@@ -217,7 +222,7 @@ jobs:
           subject-name: ${{ steps.strip-image-tag.outputs.base_image }}
           show-summary: true
           # github-token: ${{ secrets.GITHUB_TOKEN }}
-          push-to-registry: false
+          push-to-registry: true
 
       # Attest the image SBOM
       - name: Attest Image SBOM
