@@ -86,6 +86,11 @@ runs:
         path: ${{ env.PROVENANCE_ARTIFACTS_DIR }}
         merge-multiple: true
 
+    - name: Check ${{ inputs.subject-name }} SBOM
+      shell: bash
+      run: |
+        ls -lh ${{ env.PROVENANCE_ARTIFACTS_DIR }}
+
     - name: Attest ${{ inputs.subject-name }} SBOM
       id: attest-sbom
       if: inputs.artifact-type == 'sbom'
