@@ -18,7 +18,7 @@ permissions:
 env:
   TEST_THIS_WORKFLOW: true # Whether to test this workflow
   WASMCLOUD_TEST_VERSION: "v1.6.2" # wasmCloud version to test
-  WASH_TEST_VERSION: "v0.39.0" # wash-cli version to test
+  WASH_TEST_VERSION: "wash-cli-v0.39.0" # wash-cli version to test
   RUN_BINARY_ATTESTATION: true # Whether to run the binary attestation workflow
   RUN_PROVIDER_ATTESTATION: true # Whether to run the provider attestation workflow
   RUN_OCI_ATTESTATION: true # Whether to run the OCI attestation workflow
@@ -448,13 +448,22 @@ jobs:
             fi
           done
 
-      # Publish SBOMs and Attestation records
+      # Strip version prefix from ${WASH_TEST_VERSION}
+      - name: Strip version prefix from WASH_TEST_VERSION
+        id: strip-version-prefix
+        shell: bash
+        run: |
+          WASH_VERSION=${{ env.WASH_TEST_VERSION }}
+          WASH_VERSION=${WASH_VERSION#wash-cli-}
+          echo "WASH_VERSION=${WASH_VERSION}" >> $GITHUB_OUTPUT
+
+          # Publish SBOMs and Attestation records
       - name: Publish SBOMs and Attestation records
         uses: ./.github/actions/publish-sboms-and-attestations
         if: ${{ env.RUN_PUBLISH_SBOMS_AND_ATTESTATIONS }}
         with:
           subject-name: wash-cli
-          release-version: ${{ env.WASH_TEST_VERSION }}-docs
+          release-version: ${{ steps.strip-version-prefix.outputs.WASH_VERSION }}-docs
           show-metadata: true
           registry: ghcr.io
           registry-credentials: |
@@ -486,15 +495,15 @@ jobs:
           ## Software Bill of Materials and Attestations
 
           All SBOMs and attestations for this release are available as an OCI artifact at:
-          `ghcr.io/${{ github.repository }}/wash-cli-provenance:${{ env.WASH_TEST_VERSION }}-docs`
+          `ghcr.io/${{ github.repository }}/wash-cli-provenance:${{ steps.strip-version-prefix.outputs.WASH_VERSION }}-docs`
 
           You can inspect these documents using tools like `regctl`:
           ```bash
           # To list the artifacts in the OCI artifact
-          regctl artifact list ghcr.io/${{ github.repository }}/wash-cli-provenance:${{ env.WASH_TEST_VERSION }}-docs
+          regctl artifact list ghcr.io/${{ github.repository }}/wash-cli-provenance:${{ steps.strip-version-prefix.outputs.WASH_VERSION }}-docs
 
           # To inspect the contents of an artifact
-          regctl artifact get ghcr.io/${{ github.repository }}/wash-cli-provenance:${{ env.WASH_TEST_VERSION }}-docs [artifact-manifest-digest-from-previous-command]
+          regctl artifact get ghcr.io/${{ github.repository }}/wash-cli-provenance:${{ steps.strip-version-prefix.outputs.WASH_VERSION }}-docs [artifact-manifest-digest-from-previous-command]
           ```
 
           You can also verify artifact attestations with the GitHub CLI:
